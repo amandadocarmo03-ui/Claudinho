@@ -1,13 +1,13 @@
 # Diário do projeto — site do clube "Cansei! Vou ler um livro."
 
-Última atualização: 22/09/2026 · versão guardada: **v0.1-teste**
+Última atualização: 22/09/2026 · versão guardada: **v0.1-teste** (commit `3078bb1`)
 
 ## Onde estamos
 
 Primeira versão completa, em fase de **refinamento antes de ir para o ambiente online**.
 
 - Página de teste (privada, no claude.ai): https://claude.ai/artifact/GQg3tF2GsnAKSpkyCHp5aX
-- Código: branch `claude/book-club-website-273xna`, etiqueta `v0.1-teste`
+- Código: branch `claude/book-club-website-273xna`; a v0.1-teste é o commit `3078bb1` (para voltar a ela: `git checkout 3078bb1`)
 
 ### O que já existe
 - **Estante** com os 31 livros de jan/2024 a jun/2026 (importados da planilha do clube), em prateleiras por ano.
