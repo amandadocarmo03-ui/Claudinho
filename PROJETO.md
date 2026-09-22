@@ -32,6 +32,22 @@ Primeira versão completa, em fase de **refinamento antes de ir para o ambiente 
   - Pagamento recorrente no Brasil: Mercado Pago, Asaas, Pagar.me ou Stripe (comparar taxas, Pix/cartão/boleto)
   - Caminho sugerido: 1º link de assinatura do próprio provedor (sem servidor); 2º confirmação automática do pagamento (webhook) liberando o acesso do membro
   - A definir: valor, o que o membro online recebe, se presenciais também pagam, forma de pagamento preferida
+- [ ] **Link de afiliado da Amazon em cada livro** — botão "Comprar na Amazon" no detalhe do livro
+  - Pode ser feito já (sem servidor). Precisa do **ID de associado** (ex.: `nome-20`)
+  - Link por busca (título + autor) funciona para todos; link direto por ASIN é mais certeiro (pode ser preenchido aos poucos)
+  - Exigência do Programa de Associados: aviso visível "Como associada da Amazon, recebo por compras qualificadas"
+- [ ] **Aba da criadora** — apresentação de quem criou o clube + link para o Instagram **@canseideserblogger**
+  - Pode ser feito já. Precisa de: foto, texto de apresentação e outros links (se houver)
+- [ ] **WhatsApp**
+  - Simples (já dá): botões "Falar no WhatsApp" e "Entrar no grupo" com links `wa.me` / convite do grupo
+  - Automático (envio de mensagens pelo site): WhatsApp Business API (Meta, ou provedores como Twilio/Z-API) — pago, precisa de servidor e de modelos de mensagem aprovados
+- [ ] **Newsletter e avisos por e-mail automáticos** (novo livro do mês, lembrete de encontro, aniversário)
+  - Serviços: Brevo, MailerLite, Mailchimp ou Resend
+  - Novo membro entra na lista automaticamente ao se cadastrar; lembretes agendados precisam do ambiente online
+- [ ] **Incluir automaticamente no grupo quem se cadastra**
+  - O WhatsApp não permite adicionar pessoas a grupos automaticamente por vias oficiais (e as não oficiais podem banir o número)
+  - Alternativa: ao concluir o cadastro, mostrar o convite do grupo e enviá-lo também por e-mail/WhatsApp — a pessoa entra com um toque
+  - Confirmar: o "grupo" é do WhatsApp?
 
 **Informações que faltam**
 - [ ] Livros de jul, ago e set/2026 e o livro atual
