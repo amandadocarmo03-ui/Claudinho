@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Clube do Livro</title>
+  <meta name="description" content="Estante, membros, encontros, check-ins e benefícios do nosso clube do livro.">
+  <meta name="theme-color" content="#2b1a12">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="img/icone.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="img/icone.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header class="topo">
+    <div class="topo__marca">
+      <span class="topo__ornamento" aria-hidden="true">❦</span>
+      <div>
+        <h1 class="topo__titulo" id="nome-clube">Clube do Livro</h1>
+        <p class="topo__lema" id="lema-clube">Ex libris, inter amicos</p>
+      </div>
+    </div>
+    <button class="botao-curadoria" id="botao-curadoria" type="button" title="Modo curadoria">
+      <span aria-hidden="true">🗝</span> <span class="rotulo">Curadoria</span>
+    </button>
+  </header>
+
+  <nav class="abas" aria-label="Seções">
+    <a href="#/estante" data-rota="estante">Estante</a>
+    <a href="#/encontros" data-rota="encontros">Encontros</a>
+    <a href="#/checkin" data-rota="checkin">Check-in</a>
+    <a href="#/membros" data-rota="membros">Membros</a>
+    <a href="#/beneficios" data-rota="beneficios">Benefícios</a>
+    <a href="#/votacao" data-rota="votacao">Próxima leitura</a>
+    <a href="#/citacoes" data-rota="citacoes">Citações</a>
+    <a href="#/painel" data-rota="painel">Painel</a>
+  </nav>
+
+  <main id="conteudo" class="conteudo" tabindex="-1"></main>
+
+  <footer class="rodape">
+    <p>❧ Feito com papel, tinta e amizade ❧</p>
+  </footer>
+
+  <dialog id="modal" class="modal">
+    <div class="modal__corpo" id="modal-corpo"></div>
+  </dialog>
+
+  <div id="aviso" class="aviso" role="status" aria-live="polite"></div>
+
+  <script src="js/dados-iniciais.js"></script>
+  <script src="js/armazenamento.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    if ('serviceWorker' in navigator && location.protocol !== 'file:') {
+      navigator.serviceWorker.register('sw.js').catch(() => {});
+    }
+  </script>
+</body>
+</html>

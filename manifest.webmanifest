@@ -1,0 +1,14 @@
+{
+  "name": "Clube do Livro",
+  "short_name": "Clube do Livro",
+  "description": "Estante, membros, encontros, check-ins e benefícios do clube do livro.",
+  "lang": "pt-BR",
+  "start_url": "./#/estante",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#2b1a12",
+  "theme_color": "#2b1a12",
+  "icons": [
+    { "src": "img/icone.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }
+  ]
+}
