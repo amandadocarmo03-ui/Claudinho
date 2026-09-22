@@ -55,7 +55,10 @@ Primeira versão completa, em fase de **refinamento antes de ir para o ambiente 
 - [ ] Datas dos encontros (passados e próximos)
 
 **Refinamentos** (anotar aqui o que surgir nos testes)
-- [ ] …
+- [ ] Aprimorar estética, fontes e navegação com base nas referências:
+  - https://literaturaclassica.com.br/catalogo — **fontes, cores e navegabilidade**
+  - https://clubedolivropriolikarnal.com.br/lista-de-espera/ — **clareza dos dados e estética mais moderna**
+  - (Os sites não puderam ser abertos pelo ambiente do Claude: rede bloqueada. Analisar por capturas de tela ou após liberar os domínios.)
 
 **Para subir ao ambiente online**
 - [ ] Banco de dados compartilhado (Firebase ou Supabase) — hoje os dados ficam só no navegador de cada pessoa; trocar apenas `js/armazenamento.js`
