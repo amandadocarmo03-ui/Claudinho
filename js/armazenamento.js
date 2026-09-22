@@ -38,7 +38,7 @@
       salvo.prateleiras = salvo.prateleiras.filter((p) => p.id !== "ano1" && p.id !== "ano2");
       if (salvo.clube.nome === "Clube do Livro") Object.assign(salvo.clube, { nome: ini.clube.nome, lema: ini.clube.lema });
     }
-    if ((salvo.versao || 0) < 3 && salvo.clube.nome === "Cansei de Ser! Vou Ler um Livro") salvo.clube.nome = ini.clube.nome;
+    if ((salvo.versao || 0) < 4 && ["Cansei de Ser! Vou Ler um Livro", "Cansei! Vou ler um livro!"].includes(salvo.clube.nome)) salvo.clube.nome = ini.clube.nome;
     ini.prateleiras.forEach((p, i) => {
       if (!salvo.prateleiras.some((x) => x.id === p.id)) salvo.prateleiras.splice(i, 0, copia(p));
     });

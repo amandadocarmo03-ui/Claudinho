@@ -12,10 +12,10 @@
  *   - exemplo:    true = livro de demonstração (apague ao incluir os reais)
  */
 window.DADOS_INICIAIS = {
-  versao: 3,
+  versao: 4,
 
   clube: {
-    nome: "Cansei! Vou ler um livro!",
+    nome: "Cansei! Vou ler um livro.",
     lema: "Clube do livro · desde 2024",
     pinCuradoria: "1234"
   },
