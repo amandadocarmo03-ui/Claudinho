@@ -26,6 +26,13 @@ Primeira versão completa, em fase de **refinamento antes de ir para o ambiente 
 
 ## Pendências e próximos passos
 
+**Funcionalidades novas planejadas**
+- [ ] **Aba "Clube Online"** — área separada para os membros da modalidade online, com **assinatura mensal e pagamento integrado**
+  - Precisa do banco de dados e do login (ver "Para subir ao ambiente online")
+  - Pagamento recorrente no Brasil: Mercado Pago, Asaas, Pagar.me ou Stripe (comparar taxas, Pix/cartão/boleto)
+  - Caminho sugerido: 1º link de assinatura do próprio provedor (sem servidor); 2º confirmação automática do pagamento (webhook) liberando o acesso do membro
+  - A definir: valor, o que o membro online recebe, se presenciais também pagam, forma de pagamento preferida
+
 **Informações que faltam**
 - [ ] Livros de jul, ago e set/2026 e o livro atual
 - [ ] Parceiros reais do clube de benefícios (nome, benefício, cupom, presenças mínimas) — hoje há 2 de exemplo
