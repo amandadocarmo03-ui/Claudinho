@@ -153,7 +153,7 @@
     const h = hash(l.titulo + l.autor);
     const cor = l.cor || CORES_LOMBADA[h % CORES_LOMBADA.length];
     const altura = 172 + (h % 5) * 10;
-    const largura = l.titulo.length > 22 ? 58 : l.titulo.length > 12 ? 48 : 40;
+    const largura = l.titulo.length > 34 ? 70 : l.titulo.length > 22 ? 58 : l.titulo.length > 12 ? 48 : 40;
     const lido = euId() && D().leituras.some((x) => x.livroId === l.id && x.membroId === euId());
     return `<button class="lombada ${lido ? "lombada--lido" : ""}" type="button" data-livro="${l.id}"
         style="--cor:${cor};--altura:${altura}px;--largura:${largura}px"

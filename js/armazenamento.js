@@ -28,11 +28,34 @@
     };
   }
 
+  // Quando a lista oficial (dados-iniciais.js) ganha uma versão nova,
+  // traz os livros e prateleiras novos sem apagar o que o clube registrou.
+  function migrar(salvo) {
+    const ini = window.DADOS_INICIAIS;
+    if ((salvo.versao || 0) >= ini.versao) return salvo;
+    if ((salvo.versao || 0) < 2) {
+      salvo.livros = salvo.livros.filter((l) => !l.exemplo);
+      salvo.prateleiras = salvo.prateleiras.filter((p) => p.id !== "ano1" && p.id !== "ano2");
+      if (salvo.clube.nome === "Clube do Livro") Object.assign(salvo.clube, { nome: ini.clube.nome, lema: ini.clube.lema });
+    }
+    ini.prateleiras.forEach((p, i) => {
+      if (!salvo.prateleiras.some((x) => x.id === p.id)) salvo.prateleiras.splice(i, 0, copia(p));
+    });
+    salvo.livros.forEach((l) => {
+      if (!salvo.prateleiras.some((p) => p.id === l.prateleira)) l.prateleira = "atual";
+    });
+    ini.livros.forEach((l) => {
+      if (!salvo.livros.some((x) => x.id === l.id)) salvo.livros.push(copia(l));
+    });
+    salvo.versao = ini.versao;
+    return salvo;
+  }
+
   function carregar() {
     try {
       const bruto = localStorage.getItem(CHAVE);
       if (!bruto) return estadoPadrao();
-      return Object.assign(estadoPadrao(), JSON.parse(bruto));
+      return migrar(Object.assign(estadoPadrao(), JSON.parse(bruto)));
     } catch (e) {
       return estadoPadrao();
     }

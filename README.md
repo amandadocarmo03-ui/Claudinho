@@ -1,13 +1,13 @@
-# Clube do Livro 📚
+# Cansei de Ser! Vou Ler um Livro 📚
 
-Site do clube do livro com estética de biblioteca clássica: estante de madeira, lombadas douradas e páginas de pergaminho.
+Site do clube do livro **Cansei de Ser! Vou Ler um Livro** com estética de biblioteca clássica: estante de madeira, lombadas douradas e páginas de pergaminho.
 Ele pode ser **instalado no celular como aplicativo** (PWA): no navegador, use "Adicionar à tela inicial".
 
 ## Abas
 
 | Aba | O que faz |
 |---|---|
-| **Estante** | Livros lidos, organizados em prateleiras (1º ano, 2º ano, 2026·1º semestre…). Toque numa lombada para ver notas, leitores e resenhas. |
+| **Estante** | Livros lidos, organizados em prateleiras (2024, 2025, 2026 · 1º semestre…). A lista oficial vem da planilha do clube e está em `js/dados-iniciais.js`. Toque numa lombada para ver notas, leitores e resenhas. |
 | **Encontros** | Calendário de encontros. Antes da data o membro confirma "Vou!". No dia (ou depois), faz o check-in. |
 | **Check-in** | Diário pessoal: marcar os livros lidos (com nota de 1 a 5 e resenha) e os encontros em que esteve. |
 | **Membros** | Ficha de inscrição (contato, aniversário, gêneros favoritos, livro favorito) e fichário dos membros. |
