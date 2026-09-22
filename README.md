@@ -50,6 +50,8 @@ css/style.css           visual (madeira, pergaminho, lombadas)
 js/dados-iniciais.js    lista oficial de livros, prateleiras e parceiros ← edite aqui
 js/armazenamento.js     camada de dados
 js/app.js               telas e regras
+ferramentas/            gerador da página de teste
+PROJETO.md              estado atual, decisões e pendências
 manifest.webmanifest    instalação como aplicativo
 sw.js                   funcionamento offline
 ```
