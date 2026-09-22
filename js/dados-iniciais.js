@@ -2,7 +2,7 @@
  * DADOS INICIAIS DO CLUBE
  * ------------------------------------------------------------
  * Aqui fica a lista oficial de livros lidos pelo clube
- * (importada da planilha "Cansei de Ser! Vou Ler um Livro").
+ * (importada da planilha do clube).
  * Novos livros podem ser incluídos aqui ou pelo "Modo curadoria".
  *
  * Cada livro:
@@ -12,10 +12,10 @@
  *   - exemplo:    true = livro de demonstração (apague ao incluir os reais)
  */
 window.DADOS_INICIAIS = {
-  versao: 2,
+  versao: 3,
 
   clube: {
-    nome: "Cansei de Ser! Vou Ler um Livro",
+    nome: "Cansei! Vou ler um livro!",
     lema: "Clube do livro · desde 2024",
     pinCuradoria: "1234"
   },

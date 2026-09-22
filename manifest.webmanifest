@@ -1,6 +1,6 @@
 {
-  "name": "Cansei de Ser! Vou Ler um Livro",
-  "short_name": "Vou Ler um Livro",
+  "name": "Cansei! Vou ler um livro!",
+  "short_name": "Cansei!",
   "description": "Estante, membros, encontros, check-ins e benefícios do clube do livro.",
   "lang": "pt-BR",
   "start_url": "./#/estante",

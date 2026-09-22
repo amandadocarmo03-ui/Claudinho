@@ -1,6 +1,6 @@
-# Cansei de Ser! Vou Ler um Livro 📚
+# Cansei! Vou ler um livro! 📚
 
-Site do clube do livro **Cansei de Ser! Vou Ler um Livro** com estética de biblioteca clássica: estante de madeira, lombadas douradas e páginas de pergaminho.
+Site do clube do livro **Cansei! Vou ler um livro!** com estética de biblioteca clássica: estante de madeira, lombadas douradas e páginas de pergaminho.
 Ele pode ser **instalado no celular como aplicativo** (PWA): no navegador, use "Adicionar à tela inicial".
 
 ## Abas
