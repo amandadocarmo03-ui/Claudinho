@@ -50,6 +50,18 @@
     if (!modal.open) modal.showModal();
   }
   function fecharModal() { if (modal.open) modal.close(); }
+  // Confirmação dentro da própria página (as caixas nativas do navegador
+  // são bloqueadas em alguns ambientes, como apps e pré-visualizações).
+  function confirmar(mensagem, acao) {
+    abrirModal(`
+      <h3>Tem certeza?</h3>
+      <p>${esc(mensagem)}</p>
+      <div class="ficha__acoes">
+        <button class="botao botao--perigo" type="button" id="confirmar-sim">Sim, continuar</button>
+        <button class="botao botao--secundario" type="button" data-fechar>Cancelar</button>
+      </div>`);
+    $("#confirmar-sim").addEventListener("click", () => { fecharModal(); acao(); });
+  }
   modal.addEventListener("click", (e) => {
     if (e.target === modal || e.target.closest("[data-fechar]")) fecharModal();
   });
@@ -72,7 +84,7 @@
   function seletorMembro() {
     const membros = [...D().membros].sort((a, b) => a.nome.localeCompare(b.nome));
     if (!membros.length) {
-      return `<div class="caixa-destaque">Nenhum membro cadastrado ainda. <a href="#/membros">Faça seu cadastro</a> para fazer check-in e ver seus benefícios.</div>`;
+      return `<div class="caixa-destaque">Nenhum membro cadastrado ainda. <a href="#membros">Faça seu cadastro</a> para fazer check-in e ver seus benefícios.</div>`;
     }
     return `<div class="caixa-destaque">
       <label>Quem está lendo?
@@ -289,7 +301,7 @@
           <p>${media ? `${estrelasFixas(media)} ${media.toFixed(1)} ` : "Ainda sem notas "}· ${leitores.length} leitor(es)</p>
           ${eu_ ? (jaLi
             ? `<p>✦ Você já leu este livro.</p>`
-            : `<a class="botao botao--verde" href="#/checkin" data-fechar>Registrar minha leitura</a>`) : ""}
+            : `<a class="botao botao--verde" href="#checkin" data-fechar>Registrar minha leitura</a>`) : ""}
         </div>
       </div>
       ${leitores.length ? `<h3 class="titulo-bloco">Quem leu</h3><p>${leitores.map((x) => esc(membro(x.membroId)?.nome || "—")).join(", ")}</p>` : ""}
@@ -320,10 +332,11 @@
       Dados.salvar(); fecharModal(); avisar("Livro atualizado"); renderizar();
     });
     $("#excluir-livro").addEventListener("click", () => {
-      if (!confirm(`Tirar "${l.titulo}" da estante?`)) return;
-      D().livros = D().livros.filter((x) => x.id !== id);
-      D().leituras = D().leituras.filter((x) => x.livroId !== id);
-      Dados.salvar(); fecharModal(); avisar("Livro removido"); renderizar();
+      confirmar(`Tirar "${l.titulo}" da estante?`, () => {
+        D().livros = D().livros.filter((x) => x.id !== id);
+        D().leituras = D().leituras.filter((x) => x.livroId !== id);
+        Dados.salvar(); fecharModal(); avisar("Livro removido"); renderizar();
+      });
     });
   }
 
@@ -405,11 +418,12 @@
     }));
     $$("[data-lista]").forEach((b) => b.addEventListener("click", () => listaPresenca(b.dataset.lista)));
     $$("[data-excluir-encontro]").forEach((b) => b.addEventListener("click", () => {
-      if (!confirm("Excluir este encontro e suas presenças?")) return;
-      const id = b.dataset.excluirEncontro;
-      D().encontros = D().encontros.filter((x) => x.id !== id);
-      D().presencas = D().presencas.filter((x) => x.encontroId !== id);
-      Dados.salvar(); telaEncontros();
+      confirmar("Excluir este encontro e suas presenças?", () => {
+        const id = b.dataset.excluirEncontro;
+        D().encontros = D().encontros.filter((x) => x.id !== id);
+        D().presencas = D().presencas.filter((x) => x.encontroId !== id);
+        Dados.salvar(); telaEncontros();
+      });
     }));
     $("#form-encontro").addEventListener("submit", (ev) => {
       ev.preventDefault();
@@ -610,12 +624,13 @@
     });
     $$("[data-excluir-membro]").forEach((b) => b.addEventListener("click", () => {
       const m = membro(b.dataset.excluirMembro);
-      if (!confirm(`Remover ${m.nome} do clube? As leituras e presenças dele(a) também serão apagadas.`)) return;
-      D().membros = D().membros.filter((x) => x.id !== m.id);
-      D().leituras = D().leituras.filter((x) => x.membroId !== m.id);
-      D().presencas = D().presencas.filter((x) => x.membroId !== m.id);
-      if (euId() === m.id) definirEu(null);
-      Dados.salvar(); telaMembros();
+      confirmar(`Remover ${m.nome} do clube? As leituras e presenças dele(a) também serão apagadas.`, () => {
+        D().membros = D().membros.filter((x) => x.id !== m.id);
+        D().leituras = D().leituras.filter((x) => x.membroId !== m.id);
+        D().presencas = D().presencas.filter((x) => x.membroId !== m.id);
+        if (euId() === m.id) definirEu(null);
+        Dados.salvar(); telaMembros();
+      });
     }));
     const exp = $("#exportar-membros");
     if (exp) exp.addEventListener("click", exportarMembrosCSV);
@@ -711,9 +726,10 @@
       $$("#grade-parceiros [data-categoria]").forEach((c) => { c.style.display = !b.dataset.cat || c.dataset.categoria === b.dataset.cat ? "" : "none"; });
     }));
     $$("[data-excluir-parceiro]").forEach((b) => b.addEventListener("click", () => {
-      if (!confirm("Remover este parceiro?")) return;
-      D().parceiros = D().parceiros.filter((p) => p.id !== b.dataset.excluirParceiro);
-      Dados.salvar(); telaBeneficios();
+      confirmar("Remover este parceiro?", () => {
+        D().parceiros = D().parceiros.filter((p) => p.id !== b.dataset.excluirParceiro);
+        Dados.salvar(); telaBeneficios();
+      });
     }));
     $("#form-parceiro").addEventListener("submit", (e) => {
       e.preventDefault();
@@ -790,9 +806,10 @@
     }));
     const zerar = $("#zerar-votacao");
     zerar.addEventListener("click", () => {
-      if (!confirm("Apagar todas as indicações e votos?")) return;
-      D().candidatos = []; D().votos = {};
-      Dados.salvar(); telaVotacao();
+      confirmar("Apagar todas as indicações e votos?", () => {
+        D().candidatos = []; D().votos = {};
+        Dados.salvar(); telaVotacao();
+      });
     });
     const fi = $("#form-indicacao");
     if (fi) fi.addEventListener("submit", (e) => {
@@ -926,8 +943,9 @@
       catch (err) { avisar("Não consegui ler esse arquivo"); }
     });
     $("#backup-zerar").addEventListener("click", () => {
-      if (!confirm("Apagar TODOS os dados do clube neste aparelho? Baixe um backup antes.")) return;
-      Dados.reiniciar(); definirEu(null); aplicarIdentidade(); renderizar();
+      confirmar("Apagar TODOS os dados do clube neste aparelho? Baixe um backup antes.", () => {
+        Dados.reiniciar(); definirEu(null); aplicarIdentidade(); renderizar();
+      });
     });
   }
 
