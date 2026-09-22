@@ -1,9 +1,9 @@
 /* Service worker: permite instalar o site como aplicativo e abrir sem internet. */
-const CACHE = "clube-do-livro-v3";
+const CACHE = "clube-do-livro-v4";
 const ARQUIVOS = [
   "./", "index.html", "css/style.css",
   "js/dados-iniciais.js", "js/armazenamento.js", "js/app.js",
-  "manifest.webmanifest", "img/icone.svg"
+  "manifest.webmanifest", "img/logo.png", "img/favicon.png", "img/icone-192.png"
 ];
 
 self.addEventListener("install", (e) => {

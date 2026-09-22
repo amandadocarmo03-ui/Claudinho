@@ -654,7 +654,7 @@
         <div class="cartao-beneficio" style="max-width:420px;margin:0 auto 30px;text-align:left">
           <span class="lacre">EX<br>LIBRIS</span>
           <span class="cartao-beneficio__categoria">Carteirinha de membro</span>
-          <h4 style="margin-top:6px">${esc(D().clube.nome)}</h4>
+          <img src="img/logo.png" alt="${esc(D().clube.nome)}" style="display:block;height:70px;width:auto;margin:8px 0 4px">
           <p style="font-family:var(--fonte-destaque);font-size:1.4rem;margin:6px 0 2px">${esc(eu_.nome)}</p>
           <p class="cartao-beneficio__meta">Sócio(a) nº ${String(eu_.numero || 0).padStart(3, "0")}${eu_.desde ? ` · desde ${esc(eu_.desde.split("-").reverse().join("/"))}` : ""}</p>
           <p class="cartao-beneficio__meta">${leiturasDe(eu_.id).length} livros lidos · ${minhasPresencas} encontros</p>
@@ -962,7 +962,7 @@
   }
 
   function aplicarIdentidade() {
-    $("#nome-clube").textContent = D().clube.nome;
+    $("#nome-clube").alt = D().clube.nome;
     $("#lema-clube").textContent = D().clube.lema;
     document.title = D().clube.nome;
   }
