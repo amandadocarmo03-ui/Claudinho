@@ -16,11 +16,12 @@ def data_uri(caminho, tipo):
 
 
 logo = data_uri("img/logo.png", "image/png")
+foto = data_uri("img/criadora.jpg", "image/jpeg")
 html = (RAIZ / "index.html").read_text(encoding="utf-8")
 html = html.replace('<link rel="stylesheet" href="css/style.css">',
                     "<style>\n" + (RAIZ / "css/style.css").read_text(encoding="utf-8") + "\n</style>")
 for js in ["js/dados-iniciais.js", "js/armazenamento.js", "js/app.js"]:
-    codigo = (RAIZ / js).read_text(encoding="utf-8")
+    codigo = (RAIZ / js).read_text(encoding="utf-8").replace('"img/criadora.jpg"', f'"{foto}"')
     html = html.replace(f'<script src="{js}"></script>', "<script>\n" + codigo + "\n</script>")
 html = html.replace('src="img/logo.png"', f'src="{logo}"')
 # A página de teste não usa manifesto, ícones nem service worker.

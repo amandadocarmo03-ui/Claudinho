@@ -1,13 +1,13 @@
 # Diário do projeto — site do clube "Cansei! Vou ler um livro."
 
-Última atualização: 30/09/2026 · versão guardada: **v0.1-teste** (commit `3078bb1`) · em avaliação: **v0.2 — visual novo**
+Última atualização: 30/09/2026 · versão guardada: **v0.1-teste** (commit `3078bb1`) · visual atual: **v0.2** (aprovado pela Amanda)
 
 ## Onde estamos
 
 Primeira versão completa, em fase de **refinamento antes de ir para o ambiente online**.
 
 - Página de teste v0.1 (visual clássico): https://claude.ai/artifact/GQg3tF2GsnAKSpkyCHp5aX
-- Página de teste v0.2 (visual novo, em avaliação): https://claude.ai/artifact/6oxo64TQvL5BTN6BstDFVJ
+- Página de teste v0.2 (visual novo, aprovado): https://claude.ai/artifact/6oxo64TQvL5BTN6BstDFVJ
 - Código: branch `claude/book-club-website-273xna`; a v0.1-teste é o commit `3078bb1` (para voltar a ela: `git checkout 3078bb1`)
 
 ### O que já existe
@@ -20,7 +20,7 @@ Primeira versão completa, em fase de **refinamento antes de ir para o ambiente 
 - **Modo curadoria** com senha (inicial `1234`).
 - Logo oficial no topo e na carteirinha; ícones do app feitos a partir do livro do logo.
 
-### Visual v0.2 (em avaliação)
+### Visual v0.2 (aprovado)
 Referências: Prioli & Karnal (foto em destaque, CTA em pílula, cards com canto assimétrico), TAG Livros (título em duas cores),
 Companhia das Letras (fundo creme, serifa forte, busca em pílula, filtros em pílula). Mapa em `docs/referencias/`.
 - Paleta: creme `#fbf6ee`, azul-marinho `#172241`, vermelho do logo `#d92d2f`, amarelo do logo `#f6c04f`; estante continua em madeira
@@ -28,7 +28,8 @@ Companhia das Letras (fundo creme, serifa forte, busca em pílula, filtros em p�
 - Nova aba **Início** (abertura com foto da criadora, números, como funciona, livro do momento, prévia da estante, benefícios, perguntas frequentes)
 - Nova aba **A criadora** com link para @canseideserblogger
 - Busca no topo (destaca os livros na estante) e filtros por ano; barra de navegação fixa no celular
-- Falta: **foto da criadora** (`img/criadora.jpg` + `criadora.foto` em `js/dados-iniciais.js`), nome e texto de apresentação
+- Foto da criadora: `img/criadora.jpg` (recortada 4:5 para a moldura em arco) ✓
+- Falta: **nome** e **texto de apresentação** da criadora (`criadora` em `js/dados-iniciais.js`)
 
 ### Decisões tomadas
 - Nome oficial: **"Cansei! Vou ler um livro."** (com ponto final, igual ao logo).

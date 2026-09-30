@@ -26,7 +26,7 @@ window.DADOS_INICIAIS = {
   criadora: {
     nome: "",
     instagram: "canseideserblogger",
-    foto: "",
+    foto: "img/criadora.jpg",
     apresentacao: ""
   },
 

@@ -292,14 +292,14 @@ h3.titulo-bloco {
   box-shadow: 0 30px 60px rgba(0, 0, 0, .35);
   border: 6px solid rgba(244, 236, 223, .12);
 }
-.retrato img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.retrato img { width: 100%; height: 100%; object-fit: cover; object-position: 60% 20%; display: block; }
 .retrato__aviso {
   position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%);
   font-family: var(--fonte-rotulo); letter-spacing: .1em; text-transform: uppercase; font-size: .85rem;
   background: rgba(23, 34, 65, .7); color: #fff; padding: 4px 14px; border-radius: 999px; white-space: nowrap;
 }
 .retrato__legenda {
-  position: absolute; right: 14px; top: 26%;
+  position: absolute; left: 50%; bottom: 18px; transform: translateX(-50%); white-space: nowrap;
   background: var(--amarelo); color: var(--marinho);
   font-family: var(--fonte-rotulo); font-weight: 600; font-size: .95rem; letter-spacing: .04em;
   padding: 6px 14px; border-radius: 999px; box-shadow: 0 6px 16px rgba(0, 0, 0, .25);
