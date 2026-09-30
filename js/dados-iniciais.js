@@ -20,6 +20,16 @@ window.DADOS_INICIAIS = {
     pinCuradoria: "1234"
   },
 
+  // Aba "A criadora" e destaque da página inicial.
+  // foto: caminho da imagem (ex.: "img/criadora.jpg"); vazio mostra um espaço reservado.
+  // apresentacao: vazio mostra um texto provisório avisando que falta o texto real.
+  criadora: {
+    nome: "",
+    instagram: "canseideserblogger",
+    foto: "",
+    apresentacao: ""
+  },
+
   prateleiras: [
     { id: "2024", rotulo: "2024 · Primeiro ano" },
     { id: "2025", rotulo: "2025 · Segundo ano" },

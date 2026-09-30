@@ -4,45 +4,103 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Cansei! Vou ler um livro.</title>
-  <meta name="description" content="Estante, membros, encontros, check-ins e benefícios do nosso clube do livro.">
-  <meta name="theme-color" content="#2b1a12">
+  <meta name="description" content="Clube do livro Cansei! Vou ler um livro.: estante, encontros, check-ins, membros e benefícios.">
+  <meta name="theme-color" content="#172241">
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="img/favicon.png" type="image/png">
   <link rel="apple-touch-icon" href="img/apple-touch-icon.png">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,600;0,700;1,400&family=EB+Garamond:ital,wght@0,400;0,500;0,600;1,400&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600&family=Hanken+Grotesk:wght@400;500;600;700&family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,500;1,6..72,600&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <header class="topo">
-    <div class="topo__marca">
-      <a class="placa" href="#estante">
-        <h1 class="topo__titulo"><img id="nome-clube" class="placa__logo" src="img/logo.png" alt="Cansei! Vou ler um livro." width="900" height="565"></h1>
-      </a>
-      <p class="topo__lema" id="lema-clube">Clube do livro · desde 2024</p>
-    </div>
-    <button class="botao-curadoria" id="botao-curadoria" type="button" title="Modo curadoria">
-      <span aria-hidden="true">🗝</span> <span class="rotulo">Curadoria</span>
-    </button>
-  </header>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true">
+    <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></symbol>
+    <symbol id="i-pessoa" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6"/></symbol>
+    <symbol id="i-chave" viewBox="0 0 24 24"><circle cx="8" cy="15" r="4"/><path d="m11 12 9-9M17 6l3 3M15 8l2 2"/></symbol>
+    <symbol id="i-casa" viewBox="0 0 24 24"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/></symbol>
+    <symbol id="i-livros" viewBox="0 0 24 24"><path d="M4 4h4v16H4zM10 4h4v16h-4z"/><path d="m16 5 3.6-1 2.4 15.5-3.6 1z"/></symbol>
+    <symbol id="i-check" viewBox="0 0 24 24"><rect x="4" y="4" width="16" height="16" rx="4"/><path d="m8.5 12.5 2.5 2.5 5-6"/></symbol>
+    <symbol id="i-presente" viewBox="0 0 24 24"><rect x="3" y="9" width="18" height="12" rx="2"/><path d="M12 9v12M3 13h18M12 9C10 5 6 5 7 8c.6 1.6 5 1 5 1s4.4.6 5-1c1-3-3-3-5 1"/></symbol>
+    <symbol id="i-mais" viewBox="0 0 24 24"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></symbol>
+    <symbol id="i-calendario" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></symbol>
+    <symbol id="i-voto" viewBox="0 0 24 24"><path d="M4 21h16M6 17V9h4v8M14 17V4h4v13"/></symbol>
+    <symbol id="i-aspas" viewBox="0 0 24 24"><path d="M7 7c-2 1-3 3-3 6v4h5v-5H6c0-2 .7-3 2-3.6zM17 7c-2 1-3 3-3 6v4h5v-5h-3c0-2 .7-3 2-3.6z"/></symbol>
+    <symbol id="i-grafico" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16l4-5 3 3 5-7"/></symbol>
+    <symbol id="i-grupo" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c1-3.5 3.5-5.5 6.5-5.5s5.5 2 6.5 5.5"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14.8c1.8.8 3 2.6 3.5 5.2"/></symbol>
+    <symbol id="i-instagram" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.5" cy="6.5" r=".6"/></symbol>
+  </svg>
 
-  <nav class="abas" aria-label="Seções">
-    <a href="#estante" data-rota="estante">Estante</a>
-    <a href="#encontros" data-rota="encontros">Encontros</a>
-    <a href="#checkin" data-rota="checkin">Check-in</a>
-    <a href="#membros" data-rota="membros">Membros</a>
-    <a href="#beneficios" data-rota="beneficios">Benefícios</a>
-    <a href="#votacao" data-rota="votacao">Próxima leitura</a>
-    <a href="#citacoes" data-rota="citacoes">Citações</a>
-    <a href="#painel" data-rota="painel">Painel</a>
-  </nav>
+  <div class="faixa" id="faixa" role="note"></div>
+
+  <header class="topo">
+    <div class="container topo__linha">
+      <a class="marca" href="#inicio" aria-label="Página inicial">
+        <h1 class="topo__titulo"><img id="nome-clube" class="marca__logo" src="img/logo.png" alt="Cansei! Vou ler um livro." width="900" height="565"></h1>
+      </a>
+      <form class="busca" id="busca-topo" role="search">
+        <label for="busca-texto" class="sr-only" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">Buscar na estante</label>
+        <input id="busca-texto" type="search" placeholder="Busque por livro ou autor" autocomplete="off">
+        <button type="submit" aria-label="Buscar"><svg class="icone"><use href="#i-busca"/></svg></button>
+      </form>
+      <div class="topo__acoes">
+        <a class="icone-botao" href="#checkin" title="Meu diário de leitura" aria-label="Meu diário de leitura"><svg class="icone"><use href="#i-pessoa"/></svg></a>
+        <button class="icone-botao" id="botao-curadoria" type="button" title="Modo curadoria" aria-label="Modo curadoria"><svg class="icone"><use href="#i-chave"/></svg></button>
+      </div>
+    </div>
+    <nav class="container abas" aria-label="Seções">
+      <a href="#inicio" data-rota="inicio">Início</a>
+      <a href="#estante" data-rota="estante">Estante</a>
+      <a href="#encontros" data-rota="encontros">Encontros</a>
+      <a href="#checkin" data-rota="checkin">Check-in</a>
+      <a href="#beneficios" data-rota="beneficios">Benefícios</a>
+      <a href="#membros" data-rota="membros">Membros</a>
+      <a href="#votacao" data-rota="votacao">Próxima leitura</a>
+      <a href="#citacoes" data-rota="citacoes">Citações</a>
+      <a href="#painel" data-rota="painel">Painel</a>
+      <a href="#criadora" data-rota="criadora">A criadora</a>
+    </nav>
+  </header>
 
   <main id="conteudo" class="conteudo" tabindex="-1"></main>
 
   <footer class="rodape">
-    <p>❧ Feito com papel, tinta e amizade ❧</p>
+    <div class="container">
+      <div class="rodape__grade">
+        <a class="rodape__marca" href="#inicio"><img src="img/logo.png" alt="Cansei! Vou ler um livro." width="900" height="565"></a>
+        <div>
+          <h4>Navegue</h4>
+          <ul class="rodape__links">
+            <li><a href="#estante">Estante</a></li>
+            <li><a href="#encontros">Encontros</a></li>
+            <li><a href="#checkin">Check-in</a></li>
+            <li><a href="#beneficios">Benefícios</a></li>
+            <li><a href="#membros">Faça parte</a></li>
+            <li><a href="#criadora">A criadora</a></li>
+          </ul>
+        </div>
+        <div>
+          <h4>Siga</h4>
+          <ul>
+            <li><a id="rodape-instagram" href="https://www.instagram.com/canseideserblogger/" target="_blank" rel="noopener">@canseideserblogger</a></li>
+          </ul>
+        </div>
+      </div>
+      <div class="rodape__final">
+        <span id="lema-clube">Clube do livro · desde 2024</span>
+        <span>© <span id="ano-atual">2026</span> Cansei! Vou ler um livro.</span>
+      </div>
+    </div>
   </footer>
+
+  <nav class="barra-app" aria-label="Navegação principal">
+    <a href="#inicio" data-rota="inicio"><svg class="icone"><use href="#i-casa"/></svg>Início</a>
+    <a href="#estante" data-rota="estante"><svg class="icone"><use href="#i-livros"/></svg>Estante</a>
+    <a href="#checkin" data-rota="checkin"><svg class="icone"><use href="#i-check"/></svg>Check-in</a>
+    <a href="#beneficios" data-rota="beneficios"><svg class="icone"><use href="#i-presente"/></svg>Benefícios</a>
+    <button type="button" id="botao-mais"><svg class="icone"><use href="#i-mais"/></svg>Mais</button>
+  </nav>
 
   <dialog id="modal" class="modal">
     <div class="modal__corpo" id="modal-corpo"></div>

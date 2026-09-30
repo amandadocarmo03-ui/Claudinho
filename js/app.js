@@ -70,9 +70,25 @@
     new FormData(form).forEach((v, k) => { obj[k] = typeof v === "string" ? v.trim() : v; });
     return obj;
   }
-  function cabecalho(titulo, subtitulo) {
-    return `<div class="cabecalho-secao"><span class="vinheta" aria-hidden="true">❧ ❦ ❧</span><h2>${titulo}</h2><p>${subtitulo}</p></div>`;
+  const SOBRANCELHAS = {
+    estante: "Acervo do clube", encontros: "Agenda", checkin: "Meu diário", membros: "Comunidade",
+    beneficios: "Clube de vantagens", votacao: "Votação", citacoes: "Mural", painel: "Em números"
+  };
+  // Título com a última palavra em destaque (itálico vermelho), como nos títulos editoriais.
+  function tituloDestacado(titulo) {
+    const partes = titulo.trim().split(" ");
+    if (partes.length < 2) return esc(titulo);
+    const ultima = partes.pop();
+    return `${esc(partes.join(" "))} <em>${esc(ultima)}</em>`;
   }
+  function cabecalho(titulo, subtitulo) {
+    const sob = SOBRANCELHAS[rotaAtual()] || "";
+    return `<div class="cabecalho-secao">
+      <div class="cabecalho-secao__titulo">${sob ? `<span class="sobrancelha">${sob}</span>` : ""}<h2>${tituloDestacado(titulo)}</h2></div>
+      <p>${subtitulo}</p>
+    </div>`;
+  }
+  const icone = (nome) => `<svg class="icone" aria-hidden="true"><use href="#i-${nome}"/></svg>`;
 
   /* ---------- Identidade: quem está usando o site ---------- */
   const CHAVE_EU = "clube-do-livro:eu";
@@ -167,7 +183,8 @@
     const altura = 172 + (h % 5) * 10;
     const largura = l.titulo.length > 34 ? 70 : l.titulo.length > 22 ? 58 : l.titulo.length > 12 ? 48 : 40;
     const lido = euId() && D().leituras.some((x) => x.livroId === l.id && x.membroId === euId());
-    return `<button class="lombada ${lido ? "lombada--lido" : ""}" type="button" data-livro="${l.id}"
+    const busca = filtroEstante.texto ? (combinaBusca(l) ? "lombada--achada" : "lombada--apagada") : "";
+    return `<button class="lombada ${lido ? "lombada--lido" : ""} ${busca}" type="button" data-livro="${l.id}"
         style="--cor:${cor};--altura:${altura}px;--largura:${largura}px"
         title="${esc(l.titulo)} — ${esc(l.autor)}${l.exemplo ? " (exemplo)" : ""}">
         ${lido ? `<span class="lombada__selo" aria-label="lido">✦</span>` : ""}
@@ -175,12 +192,28 @@
       </button>`;
   }
 
+  const filtroEstante = { prateleira: "", texto: "" };
+  const normalizar = (t) => String(t || "").normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  function combinaBusca(l) {
+    const q = normalizar(filtroEstante.texto);
+    return !q || normalizar(l.titulo + " " + l.autor).includes(q);
+  }
+
   function telaEstante() {
-    const { prateleiras, livros } = D();
+    const { livros } = D();
     const temExemplo = livros.some((l) => l.exemplo);
+    const prateleiras = D().prateleiras.filter((p) => !filtroEstante.prateleira || p.id === filtroEstante.prateleira);
+    const achados = filtroEstante.texto ? livros.filter(combinaBusca) : null;
     conteudo.innerHTML = `
-      ${cabecalho("A Estante do Clube", `${livros.filter((l) => !l.exemplo).length} livros lidos juntos até aqui`)}
+      ${cabecalho("A estante do clube", `${livros.filter((l) => !l.exemplo).length} livros lidos juntos desde 2024, um por mês. Toque numa lombada para ver notas, leitores e resenhas.`)}
       ${temExemplo ? `<p class="legenda-estante">Os livros marcados como exemplo são só demonstração — entre na curadoria e cole a lista real do clube.</p>` : ""}
+      <div class="barra-acoes">
+        <div class="pilulas" role="group" aria-label="Filtrar por prateleira">
+          <button type="button" class="pilula ${filtroEstante.prateleira ? "" : "ativa"}" data-prat="">Todas</button>
+          ${D().prateleiras.map((p) => `<button type="button" class="pilula ${filtroEstante.prateleira === p.id ? "ativa" : ""}" data-prat="${p.id}">${esc(p.rotulo.split(" · ")[0])}</button>`).join("")}
+        </div>
+        ${achados ? `<p style="margin:0">${achados.length} livro(s) para “${esc(filtroEstante.texto)}” · <a href="#" id="limpar-busca">limpar busca</a></p>` : ""}
+      </div>
       <div class="estante">
         ${prateleiras.map((p) => {
           const daPrateleira = livrosOrdenados(livros.filter((l) => l.prateleira === p.id));
@@ -193,7 +226,7 @@
           </section>`;
         }).join("")}
       </div>
-      <p class="legenda-estante">Toque numa lombada para ver detalhes, notas e resenhas. ✦ = você já leu.</p>
+      <p class="legenda-estante">✦ marca os livros que você já registrou como lidos.</p>
 
       <div class="somente-curadoria">
         <h3 class="titulo-bloco">Adicionar livros à estante</h3>
@@ -231,6 +264,9 @@
       </div>`;
 
     $$(".lombada").forEach((b) => b.addEventListener("click", () => detalheLivro(b.dataset.livro)));
+    $$("[data-prat]").forEach((b) => b.addEventListener("click", () => { filtroEstante.prateleira = b.dataset.prat; telaEstante(); }));
+    const limpar = $("#limpar-busca");
+    if (limpar) limpar.addEventListener("click", (e) => { e.preventDefault(); filtroEstante.texto = ""; $("#busca-texto").value = ""; telaEstante(); });
 
     const formLivro = $("#form-livro");
     formLivro.addEventListener("submit", (e) => {
@@ -294,8 +330,8 @@
       <div class="detalhe-livro">
         <div class="capa" style="--cor:${cor}"><span>${esc(l.titulo)}</span><small>${esc(l.autor)}</small></div>
         <div>
-          <h3 style="color:var(--vinho);font-size:1.6rem;margin-bottom:0">${esc(l.titulo)}</h3>
-          <p><i>${esc(l.autor)}</i></p>
+          <h3>${esc(l.titulo)}</h3>
+          <p class="destaque" style="font-family:var(--fonte-display);font-size:1.2rem">${esc(l.autor)}</p>
           <p>${pratel ? esc(pratel.rotulo) : ""}${l.mes ? ` · ${MESES_LONGOS[l.mes - 1]}` : ""}${l.ano ? ` de ${l.ano}` : ""}
             ${l.exemplo ? ` <span class="selo selo--exemplo">exemplo</span>` : ""}</p>
           <p>${media ? `${estrelasFixas(media)} ${media.toFixed(1)} ` : "Ainda sem notas "}· ${leitores.length} leitor(es)</p>
@@ -476,7 +512,11 @@
           <div class="numero"><strong>${minhasPresencas.length}</strong><span>encontros</span></div>
           <div class="numero"><strong>${D().livros.length ? Math.round((minhasLeituras.length / D().livros.length) * 100) : 0}%</strong><span>da estante</span></div>
         </div>
-        ${selos.length ? `<div class="selos" style="justify-content:center;margin-bottom:10px">${selos.map((s) => `<span class="selo">${s}</span>`).join("")}</div>` : ""}
+        <div class="progresso">
+          <div class="progresso__rotulo"><span>Sua estante</span><span>${minhasLeituras.length} de ${D().livros.length} livros</span></div>
+          <div class="progresso__barra"><span style="width:${D().livros.length ? (minhasLeituras.length / D().livros.length) * 100 : 0}%"></span></div>
+        </div>
+        ${selos.length ? `<div class="selos" style="margin-bottom:10px">${selos.map((s) => `<span class="selo">${s}</span>`).join("")}</div>` : ""}
 
         <h3 class="titulo-bloco">Livros que li</h3>
         <ul class="lista-check">
@@ -558,7 +598,7 @@
     conteudo.innerHTML = `
       ${cabecalho("Membros do Clube", `${membros.length} leitor(es) com ficha na biblioteca`)}
       <details class="caixa-destaque" ${membros.length ? "" : "open"}>
-        <summary style="cursor:pointer;font-family:var(--fonte-titulo);font-size:1.2rem;color:var(--vinho)">Ficha de inscrição</summary>
+        <summary>Ficha de inscrição</summary>
         <form class="formulario" id="form-membro" style="margin-top:14px">
           <div class="campos">
             <label>Nome completo <input name="nome" required autocomplete="name"></label>
@@ -570,8 +610,8 @@
             <label>Instagram / Skoob / Goodreads <input name="rede" placeholder="@seuperfil"></label>
             <label>No clube desde <input name="desde" type="month"></label>
           </div>
-          <fieldset style="border:1px solid var(--pergaminho-escuro);border-radius:4px">
-            <legend style="font-variant:small-caps;color:var(--tinta-suave)">Gêneros favoritos</legend>
+          <fieldset>
+            <legend>Gêneros favoritos</legend>
             <div class="filtros">${GENEROS.map((g) => `<label class="caixa"><input type="checkbox" name="genero" value="${g}"> ${g}</label>`).join("")}</div>
           </fieldset>
           <label>Um livro que marcou sua vida <input name="livroFavorito"></label>
@@ -666,18 +706,16 @@
       ${cabecalho("Clube de Benefícios", "Mimos dos nossos parceiros para quem é do clube")}
       ${seletorMembro()}
       ${eu_ ? `
-        <div class="cartao-beneficio" style="max-width:420px;margin:0 auto 30px;text-align:left">
-          <span class="lacre">EX<br>LIBRIS</span>
-          <span class="cartao-beneficio__categoria">Carteirinha de membro</span>
-          <img src="img/logo.png" alt="${esc(D().clube.nome)}" style="display:block;height:70px;width:auto;margin:8px 0 4px">
-          <p style="font-family:var(--fonte-destaque);font-size:1.4rem;margin:6px 0 2px">${esc(eu_.nome)}</p>
-          <p class="cartao-beneficio__meta">Sócio(a) nº ${String(eu_.numero || 0).padStart(3, "0")}${eu_.desde ? ` · desde ${esc(eu_.desde.split("-").reverse().join("/"))}` : ""}</p>
-          <p class="cartao-beneficio__meta">${leiturasDe(eu_.id).length} livros lidos · ${minhasPresencas} encontros</p>
+        <div class="carteirinha">
+          <img src="img/logo.png" alt="${esc(D().clube.nome)}">
+          <span class="carteirinha__rotulo">Carteirinha de membro · nº ${String(eu_.numero || 0).padStart(3, "0")}</span>
+          <span class="carteirinha__nome">${esc(eu_.nome)}</span>
+          <span class="carteirinha__meta">${leiturasDe(eu_.id).length} livros lidos · ${minhasPresencas} encontros${eu_.desde ? ` · desde ${esc(eu_.desde.split("-").reverse().join("/"))}` : ""}</span>
         </div>` : ""}
 
-      ${categorias.length > 1 ? `<div class="filtros" style="justify-content:center;margin-bottom:18px">
-        <button class="botao botao--pequeno" data-cat="">Todos</button>
-        ${categorias.map((c) => `<button class="botao botao--pequeno botao--secundario" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}
+      ${categorias.length > 1 ? `<div class="pilulas" style="margin-bottom:22px">
+        <button class="pilula ativa" data-cat="">Todos</button>
+        ${categorias.map((c) => `<button class="pilula" data-cat="${esc(c)}">${esc(c)}</button>`).join("")}
       </div>` : ""}
 
       <div class="grade" id="grade-parceiros">
@@ -696,7 +734,7 @@
             ${p.validade && !vencido ? `<p class="cartao-beneficio__meta">Válido até ${formatarData(p.validade)}</p>` : ""}
             ${p.contato ? `<p class="cartao-beneficio__meta">${esc(p.contato)}</p>` : ""}
             ${p.exemplo ? `<span class="selo selo--exemplo">exemplo</span>` : ""}
-            <div class="ficha__acoes somente-curadoria" style="justify-content:center">
+            <div class="ficha__acoes somente-curadoria">
               <button class="botao botao--pequeno botao--perigo" data-excluir-parceiro="${p.id}">Remover</button>
             </div>
           </article>`;
@@ -722,7 +760,7 @@
 
     ligarSeletorMembro();
     $$("[data-cat]").forEach((b) => b.addEventListener("click", () => {
-      $$("[data-cat]").forEach((x) => x.classList.toggle("botao--secundario", x !== b));
+      $$("[data-cat]").forEach((x) => x.classList.toggle("ativa", x === b));
       $$("#grade-parceiros [data-categoria]").forEach((c) => { c.style.display = !b.dataset.cat || c.dataset.categoria === b.dataset.cat ? "" : "none"; });
     }));
     $$("[data-excluir-parceiro]").forEach((b) => b.addEventListener("click", () => {
@@ -950,9 +988,233 @@
   }
 
   /* =========================================================
+     INÍCIO
+     ========================================================= */
+  const criadora = () => window.DADOS_INICIAIS.criadora || {};
+
+  function retratoHTML(legenda) {
+    const c = criadora();
+    return `<figure class="retrato" style="margin:0">
+      ${c.foto ? `<img src="${esc(c.foto)}" alt="${esc(c.nome || "Criadora do clube")}">` : `<span class="retrato__aviso">sua foto aqui</span>`}
+      ${legenda ? `<figcaption class="retrato__legenda">${legenda}</figcaption>` : ""}
+    </figure>`;
+  }
+
+  // O livro do momento: o primeiro da prateleira "atual" ou, se ela estiver vazia, a leitura mais recente.
+  function livroDestaque() {
+    const livros = D().livros.filter((l) => !l.exemplo);
+    const atuais = livrosOrdenados(livros.filter((l) => l.prateleira === "atual"));
+    if (atuais.length) return { livro: atuais[0], rotulo: "Lendo agora" };
+    const ultimo = livrosOrdenados(livros).pop();
+    return ultimo ? { livro: ultimo, rotulo: "Última leitura do clube" } : null;
+  }
+
+  function capaHTML(l) {
+    const cor = l.cor || CORES_LOMBADA[hash(l.titulo + l.autor) % CORES_LOMBADA.length];
+    return `<div class="capa" style="--cor:${cor}"><span>${esc(l.titulo)}</span><small>${esc(l.autor)}</small></div>`;
+  }
+
+  function telaInicio() {
+    const livros = D().livros.filter((l) => !l.exemplo);
+    const autores = new Set(livros.map((l) => l.autor)).size;
+    const anos = livros.map((l) => l.ano).filter(Boolean);
+    const primeiroAno = anos.length ? Math.min(...anos) : new Date().getFullYear();
+    const anoDeClube = new Date().getFullYear() - primeiroAno + 1;
+    const membros = D().membros.length;
+    const destaque = livroDestaque();
+    const c = criadora();
+    const recentes = livrosOrdenados(livros).slice(-14);
+    const parceiros = D().parceiros.slice(0, 3);
+
+    conteudo.innerHTML = `
+      <section class="heroi">
+        <div class="container heroi__grade">
+          <div>
+            <span class="sobrancelha">Clube do livro · desde ${primeiroAno}</span>
+            <h1>Cansou? Então <em>vem ler</em> com a gente.</h1>
+            <p class="heroi__sub">Um livro por mês, encontros para conversar sobre ele e uma estante que cresce desde ${primeiroAno}.</p>
+            <div class="heroi__acoes">
+              <a class="botao" href="#membros">Quero participar</a>
+              <a class="botao botao--claro" href="#estante">Ver a estante</a>
+            </div>
+          </div>
+          ${retratoHTML(`@${esc(c.instagram || "canseideserblogger")}`)}
+        </div>
+      </section>
+
+      <div class="container">
+        <div class="numeros-faixa">
+          <div><strong>${livros.length}</strong><span>livros lidos juntos</span></div>
+          <div><strong>${autores}</strong><span>autoras e autores</span></div>
+          <div><strong>${anoDeClube}º</strong><span>ano de clube</span></div>
+          ${membros ? `<div><strong>${membros}</strong><span>membros</span></div>` : `<div><strong>1</strong><span>livro por mês</span></div>`}
+        </div>
+      </div>
+
+      <section class="secao">
+        <div class="container">
+          <div class="secao__topo">
+            <div><span class="sobrancelha">O que é o clube?</span>
+              <h2>Uma experiência <em>literária</em> para quem <em>cansou</em> de só pensar em ler</h2></div>
+            <p>Tudo acontece por aqui: a escolha do livro, a leitura do mês, o encontro e os mimos dos parceiros.</p>
+          </div>
+          <div class="passos">
+            <a class="passo" href="#votacao"><span class="passo__icone">${icone("voto")}</span><h3>Escolhemos juntos</h3><p>Membros indicam livros e votam na próxima leitura.</p></a>
+            <a class="passo" href="#estante"><span class="passo__icone">${icone("livros")}</span><h3>Lemos no mês</h3><p>Um livro por mês, que entra para a estante do clube.</p></a>
+            <a class="passo" href="#encontros"><span class="passo__icone">${icone("calendario")}</span><h3>Conversamos</h3><p>No encontro, cada um faz check-in e conta o que achou.</p></a>
+            <a class="passo" href="#beneficios"><span class="passo__icone">${icone("presente")}</span><h3>Ganhamos mimos</h3><p>Quem participa libera descontos com os parceiros.</p></a>
+          </div>
+        </div>
+      </section>
+
+      ${destaque ? `
+      <section class="secao secao--escura">
+        <div class="container livro-do-mes">
+          ${capaHTML(destaque.livro)}
+          <div>
+            <span class="sobrancelha">${destaque.rotulo}</span>
+            <h2>${esc(destaque.livro.titulo)}</h2>
+            <p class="livro-do-mes__autor">${esc(destaque.livro.autor)}</p>
+            <ul class="metadados">
+              ${destaque.livro.mes ? `<li><b>Mês</b>${MESES_LONGOS[destaque.livro.mes - 1]} de ${destaque.livro.ano}</li>` : ""}
+              <li><b>Leitores</b>${leitoresDe(destaque.livro.id).length}</li>
+              <li><b>Nota do clube</b>${mediaNotas(destaque.livro.id) ? mediaNotas(destaque.livro.id).toFixed(1) + " de 5" : "sem notas ainda"}</li>
+            </ul>
+            <div class="heroi__acoes">
+              <button class="botao" type="button" data-livro="${destaque.livro.id}">Ver detalhes</button>
+              <a class="botao botao--claro" href="#checkin">Registrar minha leitura</a>
+            </div>
+          </div>
+        </div>
+      </section>` : ""}
+
+      <section class="secao">
+        <div class="container">
+          <div class="secao__topo">
+            <div><span class="sobrancelha">Acervo</span><h2>As leituras mais <em>recentes</em></h2></div>
+            <p>${livros.length} livros em ${anoDeClube} anos. <a href="#estante">Ver a estante completa →</a></p>
+          </div>
+          <div class="estante estante--previa">
+            <section class="prateleira" aria-label="Leituras recentes">
+              <div class="prateleira__livros">${recentes.map(lombadaHTML).join("")}</div>
+              <div class="prateleira__tabua"></div>
+            </section>
+          </div>
+        </div>
+      </section>
+
+      <section class="secao secao--papel2">
+        <div class="container">
+          <div class="secao__topo">
+            <div><span class="sobrancelha">Clube de vantagens</span><h2>Ler também dá <em>desconto</em></h2></div>
+            <p>Cada membro tem uma carteirinha digital. Alguns benefícios liberam conforme a presença nos encontros.</p>
+          </div>
+          <div class="grade grade--ajustada">
+            ${parceiros.map((p) => `<article class="cartao-beneficio">
+              <span class="cartao-beneficio__categoria">${esc(p.categoria)}</span>
+              <h4>${esc(p.nome)}</h4>
+              <p class="cartao-beneficio__oferta">${esc(p.beneficio)}</p>
+              ${p.exemplo ? `<span class="selo selo--exemplo">exemplo</span>` : ""}
+            </article>`).join("")}
+          </div>
+          <p style="margin-top:24px"><a class="botao botao--secundario" href="#beneficios">Ver todos os benefícios</a></p>
+        </div>
+      </section>
+
+      <section class="secao">
+        <div class="container criadora">
+          ${retratoHTML("")}
+          <div>
+            <span class="sobrancelha">Quem criou o clube</span>
+            <h2>${c.nome ? esc(c.nome) : "Por trás da <em>estante</em>"}</h2>
+            <p class="criadora__arroba">@${esc(c.instagram || "canseideserblogger")}</p>
+            ${c.apresentacao ? `<p>${esc(c.apresentacao)}</p>` : `<p class="aviso-texto">Texto provisório: aqui entra a sua apresentação — quem você é, como o clube nasceu e o que você ama ler.</p>`}
+            <div class="heroi__acoes" style="margin-top:18px">
+              <a class="botao botao--secundario" href="https://www.instagram.com/${encodeURIComponent(c.instagram || "canseideserblogger")}/" target="_blank" rel="noopener">${icone("instagram")} Seguir no Instagram</a>
+              <a class="botao botao--secundario" href="#criadora">Conhecer mais</a>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="secao secao--papel2">
+        <div class="container">
+          <div class="secao__topo"><div><span class="sobrancelha">Dúvidas</span><h2>Perguntas <em>frequentes</em></h2></div></div>
+          <div class="perguntas">
+            <details><summary>Como faço para participar?</summary><p>Preencha a ficha na aba Membros. Você recebe um número de sócio e já pode fazer check-in e ver seus benefícios.</p></details>
+            <details><summary>Como funciona o check-in?</summary><p>No dia do encontro, abra a aba Encontros (ou Check-in) e toque em “Fazer check-in”. Na aba Check-in você também marca os livros que leu, dá nota e escreve uma resenha curtinha.</p></details>
+            <details><summary>Como uso os benefícios?</summary><p>Na aba Benefícios aparecem sua carteirinha e os cupons dos parceiros. Alguns exigem um número mínimo de presenças nos encontros para liberar.</p></details>
+            <details><summary>Posso sugerir o próximo livro?</summary><p>Pode! Na aba Próxima leitura você indica um livro e vota nas indicações dos outros membros.</p></details>
+          </div>
+        </div>
+      </section>
+
+      <section class="secao secao--escura chamada-final">
+        <div class="container">
+          <h2>Cansou de só <em>pensar</em> em ler?</h2>
+          <p>Então vem. O próximo livro já está na estante esperando por você.</p>
+          <div class="heroi__acoes"><a class="botao" href="#membros">Quero participar</a></div>
+        </div>
+      </section>`;
+
+    $$("[data-livro]").forEach((b) => b.addEventListener("click", () => detalheLivro(b.dataset.livro)));
+  }
+
+  /* =========================================================
+     A CRIADORA
+     ========================================================= */
+  function telaCriadora() {
+    const c = criadora();
+    const insta = c.instagram || "canseideserblogger";
+    conteudo.innerHTML = `
+      <div class="criadora" style="margin-top:8px">
+        ${retratoHTML(`@${esc(insta)}`)}
+        <div>
+          <span class="sobrancelha">A criadora</span>
+          <h2 style="font-size:clamp(2.2rem,5vw,3.6rem)">${c.nome ? esc(c.nome) : "Quem está por trás do <em>Cansei!</em>"}</h2>
+          <p class="criadora__arroba">@${esc(insta)}</p>
+          ${c.apresentacao ? `<p>${esc(c.apresentacao)}</p>` : `<p class="aviso-texto">Texto provisório: aqui entra a sua apresentação — quem você é, como o clube nasceu em 2024, o que você ama ler e o que as pessoas encontram no seu Instagram.</p>`}
+          <div class="heroi__acoes" style="margin-top:20px">
+            <a class="botao" href="https://www.instagram.com/${encodeURIComponent(insta)}/" target="_blank" rel="noopener">${icone("instagram")} Seguir @${esc(insta)}</a>
+            <a class="botao botao--secundario" href="#membros">Entrar para o clube</a>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  function abrirMais() {
+    const itens = [
+      ["encontros", "calendario", "Encontros"], ["membros", "grupo", "Membros"], ["votacao", "voto", "Próxima leitura"],
+      ["citacoes", "aspas", "Citações"], ["painel", "grafico", "Painel"], ["criadora", "pessoa", "A criadora"]
+    ];
+    abrirModal(`
+      <h3>Mais do clube</h3>
+      <ul class="lista-mais">
+        ${itens.map(([rota, ic, nome]) => `<li><a href="#${rota}">${icone(ic)} ${nome}</a></li>`).join("")}
+        <li><a href="#" id="mais-curadoria">${icone("chave")} ${emCuradoria() ? "Sair da curadoria" : "Modo curadoria"}</a></li>
+      </ul>`);
+    $("#mais-curadoria").addEventListener("click", (e) => { e.preventDefault(); fecharModal(); $("#botao-curadoria").click(); });
+  }
+
+  function atualizarFaixa() {
+    const d = livroDestaque();
+    const proximo = [...D().encontros].filter((e) => dataLocal(e.data) >= hoje()).sort((a, b) => a.data.localeCompare(b.data))[0];
+    const faixa = $("#faixa");
+    faixa.hidden = false;
+    if (proximo) {
+      faixa.innerHTML = `<b>Próximo encontro</b>${formatarData(proximo.data)}${proximo.local ? " · " + esc(proximo.local) : ""} · <a href="#encontros">confirmar presença</a>`;
+    } else if (d) {
+      faixa.innerHTML = `<b>${d.rotulo}</b><i>${esc(d.livro.titulo)}</i>, de ${esc(d.livro.autor)}`;
+    } else {
+      faixa.hidden = true;
+    }
+  }
+
+  /* =========================================================
      Roteamento
      ========================================================= */
   const ROTAS = {
+    inicio: telaInicio,
     estante: telaEstante,
     encontros: telaEncontros,
     checkin: telaCheckin,
@@ -960,30 +1222,44 @@
     beneficios: telaBeneficios,
     votacao: telaVotacao,
     citacoes: telaCitacoes,
-    painel: telaPainel
+    painel: telaPainel,
+    criadora: telaCriadora
   };
 
   function rotaAtual() {
     const r = location.hash.replace(/^#\/?/, "");
-    return ROTAS[r] ? r : "estante";
+    return ROTAS[r] ? r : "inicio";
   }
 
   function renderizar() {
     const r = rotaAtual();
-    $$(".abas a").forEach((a) => {
+    $$(".abas a, .barra-app a").forEach((a) => {
       const ativa = a.dataset.rota === r;
       a.classList.toggle("ativa", ativa);
-      if (ativa) { a.setAttribute("aria-current", "page"); a.scrollIntoView({ block: "nearest", inline: "nearest" }); }
+      if (ativa) a.setAttribute("aria-current", "page");
       else a.removeAttribute("aria-current");
     });
+    const abaAtiva = $(".abas a.ativa");
+    if (abaAtiva) abaAtiva.parentElement.scrollLeft = abaAtiva.offsetLeft - 24;
+    conteudo.classList.toggle("pagina", r !== "inicio");
     ROTAS[r]();
+    atualizarFaixa();
   }
 
   function aplicarIdentidade() {
     $("#nome-clube").alt = D().clube.nome;
     $("#lema-clube").textContent = D().clube.lema;
+    $("#ano-atual").textContent = new Date().getFullYear();
     document.title = D().clube.nome;
   }
+
+  $("#busca-topo").addEventListener("submit", (e) => {
+    e.preventDefault();
+    filtroEstante.texto = $("#busca-texto").value.trim();
+    filtroEstante.prateleira = "";
+    if (rotaAtual() === "estante") { telaEstante(); window.scrollTo(0, 0); } else location.hash = "estante";
+  });
+  $("#botao-mais").addEventListener("click", abrirMais);
 
   window.addEventListener("hashchange", () => { fecharModal(); renderizar(); window.scrollTo(0, 0); });
   try { if (sessionStorage.getItem(CHAVE_CURADORIA)) aplicarCuradoria(true); } catch (e) {}

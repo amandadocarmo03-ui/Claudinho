@@ -5,4 +5,4 @@ Leia `PROJETO.md` antes de começar: tem o estado atual, as decisões tomadas e 
 
 - Lista oficial de livros: `js/dados-iniciais.js`. Ao mudá-la, suba `versao` e trate a migração em `js/armazenamento.js`.
 - Não use `alert`/`confirm`/`prompt` (bloqueados na página de teste); use `confirmar()` de `js/app.js`.
-- Página de teste: gere com `python3 ferramentas/gerar-versao-teste.py` e republique no artifact https://claude.ai/artifact/GQg3tF2GsnAKSpkyCHp5aX (passar a URL ao publicar).
+- Página de teste: gere com `python3 ferramentas/gerar-versao-teste.py` e republique (passando a URL) no artifact do visual atual, v0.2: https://claude.ai/artifact/6oxo64TQvL5BTN6BstDFVJ. O v0.1 (https://claude.ai/artifact/GQg3tF2GsnAKSpkyCHp5aX) fica congelado para comparação.
