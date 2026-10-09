@@ -24,7 +24,9 @@
       leituras: [],    // { membroId, livroId, nota, resenha, em }
       candidatos: [],  // { id, titulo, autor, indicadoPor, em }
       votos: {},       // { membroId: candidatoId }
-      citacoes: []     // { id, texto, livroId, pagina, membroId, em }
+      citacoes: [],    // { id, texto, livroId, pagina, membroId, em }
+      online: copia(ini.clubeOnline || {}),
+      assinaturas: []  // { id, membroId, plano, metodo, status, inicio, renovaEm, demo }
     };
   }
 

@@ -73,6 +73,25 @@ window.DADOS_INICIAIS = {
 
   encontros: [],
 
+  // Clube Online: área para assinantes, com encontros online e materiais.
+  // Os valores abaixo são de exemplo — ajuste no modo curadoria ou aqui.
+  clubeOnline: {
+    valoresDeExemplo: true,
+    sala: "",
+    planos: [
+      { id: "mensal", nome: "Mensal", preco: 29.9, periodo: "mês", descricao: "Acesso completo, renovado todo mês. Cancele quando quiser." },
+      { id: "anual", nome: "Anual", preco: 299, periodo: "ano", descricao: "Doze meses de clube pelo preço de dez.", destaque: "2 meses grátis" }
+    ],
+    beneficios: [
+      "Encontro online todo mês, ao vivo, para conversar sobre o livro",
+      "Sala exclusiva com o link dos encontros e as gravações",
+      "Materiais de leitura: guias, perguntas para debate e indicações",
+      "Presenças nos encontros online também contam pontos no ranking",
+      "Selo “Sala virtual” no seu perfil"
+    ],
+    materiais: []
+  },
+
   parceiros: [
     {
       id: "exp1",

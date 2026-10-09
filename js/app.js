@@ -71,7 +71,7 @@
     return obj;
   }
   const SOBRANCELHAS = {
-    estante: "Acervo do clube", encontros: "Agenda", checkin: "Meu diário", membros: "Comunidade",
+    estante: "Acervo do clube", encontros: "Agenda", checkin: "Meu diário", membros: "Comunidade", ranking: "Quadro de honra",
     beneficios: "Clube de vantagens", votacao: "Votação", citacoes: "Mural", painel: "Em números"
   };
   // Título com a última palavra em destaque (itálico vermelho), como nos títulos editoriais.
@@ -102,18 +102,23 @@
     if (!membros.length) {
       return `<div class="caixa-destaque">Nenhum membro cadastrado ainda. <a href="#membros">Faça seu cadastro</a> para fazer check-in e ver seus benefícios.</div>`;
     }
-    return `<div class="caixa-destaque">
-      <label>Quem está lendo?
-        <select id="seletor-eu">
-          <option value="">— escolha seu nome —</option>
-          ${membros.map((m) => `<option value="${m.id}" ${m.id === euId() ? "selected" : ""}>${esc(m.nome)}</option>`).join("")}
-        </select>
-      </label>
+    const e = eu();
+    if (!e) {
+      return `<div class="sessao">
+        <span>Entre para fazer check-in, somar pontos e ver seus benefícios.</span>
+        <button class="botao botao--pequeno" type="button" data-entrar>Entrar</button>
+      </div>`;
+    }
+    const p = pontosDe(e.id);
+    return `<div class="sessao sessao--ativa">
+      <span class="avatar">${esc(iniciais(e.nome))}</span>
+      <span class="sessao__quem"><b>${esc(e.nome)}</b><small>${esc(nivelDe(p).nome)} · ${p} pontos · ${posicaoDe(e.id)}º no ranking</small></span>
+      <span class="sessao__acoes"><a href="#checkin">Minha jornada</a><a href="#" data-sair>Sair</a></span>
     </div>`;
   }
   function ligarSeletorMembro() {
-    const sel = $("#seletor-eu");
-    if (sel) sel.addEventListener("change", () => { definirEu(sel.value); renderizar(); });
+    $$("[data-entrar]").forEach((b) => b.addEventListener("click", () => abrirEntrar()));
+    $$("[data-sair]").forEach((a) => a.addEventListener("click", (ev) => { ev.preventDefault(); definirEu(null); avisar("Até a próxima leitura!"); renderizar(); }));
   }
 
   /* ---------- Modo curadoria ---------- */
@@ -157,21 +162,496 @@
   function livrosOrdenados(lista) {
     return [...lista].sort((a, b) => ((a.ano || 0) - (b.ano || 0)) || ((a.mes || 0) - (b.mes || 0)) || a.titulo.localeCompare(b.titulo));
   }
-  function selosDe(membroId) {
-    const lidos = leiturasDe(membroId).length;
-    const pres = presencasDe(membroId).length;
-    const resenhas = leiturasDe(membroId).filter((l) => l.resenha).length;
-    const cits = D().citacoes.filter((c) => c.membroId === membroId).length;
-    const selos = [];
-    if (lidos >= 1) selos.push("📖 Primeiro capítulo");
-    if (lidos >= 5) selos.push("📚 Leitura assídua");
-    if (lidos >= 10) selos.push("🐛 Traça de biblioteca");
-    if (lidos >= 20) selos.push("🏛 Acervo vivo");
-    if (pres >= 5) selos.push("🪑 Cadeira cativa");
-    if (pres >= 12) selos.push("🕯 Guardiã(o) do sarau");
-    if (resenhas >= 3) selos.push("🪶 Pena afiada");
-    if (cits >= 3) selos.push("✒️ Colecionador(a) de frases");
-    return selos;
+  /* =========================================================
+     JOGO: pontos, níveis, conquistas, sequência e ranking
+     ========================================================= */
+  const PONTOS = { presenca: 50, leitura: 30, resenha: 15, citacao: 10, indicacao: 10 };
+  const NIVEIS = [
+    { min: 0, nome: "Página 1" },
+    { min: 100, nome: "Capítulo aberto" },
+    { min: 250, nome: "Leitura em dia" },
+    { min: 500, nome: "Traça de livro" },
+    { min: 900, nome: "Bibliófilo(a)" },
+    { min: 1500, nome: "Lenda da estante" }
+  ];
+  const CONQUISTAS = [
+    { id: "primeira-cadeira", icone: "🪑", nome: "Primeira cadeira", meta: "Ir ao primeiro encontro", ok: (s) => s.presencas >= 1 },
+    { id: "cadeira-cativa", icone: "🛋️", nome: "Cadeira cativa", meta: "Ir a 5 encontros", ok: (s) => s.presencas >= 5 },
+    { id: "guardia-sarau", icone: "🕯️", nome: "Guardiã(o) do sarau", meta: "Ir a 12 encontros", ok: (s) => s.presencas >= 12 },
+    { id: "em-sequencia", icone: "🔥", nome: "Em sequência", meta: "3 encontros seguidos", ok: (s) => s.melhorSequencia >= 3 },
+    { id: "maratona", icone: "⚡", nome: "Maratona", meta: "6 encontros seguidos", ok: (s) => s.melhorSequencia >= 6 },
+    { id: "primeiro-capitulo", icone: "📖", nome: "Primeiro capítulo", meta: "Registrar 1 livro lido", ok: (s) => s.lidos >= 1 },
+    { id: "leitura-assidua", icone: "📚", nome: "Leitura assídua", meta: "Registrar 5 livros", ok: (s) => s.lidos >= 5 },
+    { id: "traca", icone: "🐛", nome: "Traça de biblioteca", meta: "Registrar 10 livros", ok: (s) => s.lidos >= 10 },
+    { id: "acervo-vivo", icone: "🏛️", nome: "Acervo vivo", meta: "Registrar 20 livros", ok: (s) => s.lidos >= 20 },
+    { id: "pena-afiada", icone: "🪶", nome: "Pena afiada", meta: "Escrever 3 resenhas", ok: (s) => s.resenhas >= 3 },
+    { id: "frases", icone: "✒️", nome: "Colecionador(a) de frases", meta: "Pregar 3 citações no mural", ok: (s) => s.citacoes >= 3 },
+    { id: "voz-da-estante", icone: "🗳️", nome: "Voz da estante", meta: "Indicar um livro para votação", ok: (s) => s.indicacoes >= 1 },
+    { id: "sala-virtual", icone: "💻", nome: "Sala virtual", meta: "Assinar o Clube Online", ok: (s) => s.assinante }
+  ];
+
+  const encontrosRealizados = () => [...D().encontros].filter((e) => dataLocal(e.data) <= hoje()).sort((a, b) => a.data.localeCompare(b.data));
+  const foiAo = (membroId, encontroId) => D().presencas.some((p) => p.membroId === membroId && p.encontroId === encontroId);
+
+  // Sequência: encontros seguidos com presença. Encontros online só contam
+  // para quem foi — faltar a um online não quebra a sequência.
+  function sequenciasDe(membroId) {
+    let atual = 0, melhor = 0;
+    encontrosRealizados()
+      .filter((e) => e.tipo !== "online" || foiAo(membroId, e.id))
+      .forEach((e) => {
+        if (foiAo(membroId, e.id)) { atual += 1; melhor = Math.max(melhor, atual); } else atual = 0;
+      });
+    return { atual, melhor };
+  }
+
+  // desde: Date opcional para limitar a contagem (ex.: só este ano).
+  function estatisticasDe(membroId, desde) {
+    const depois = (iso) => !desde || (iso && new Date(iso) >= desde);
+    const presencas = D().presencas.filter((p) => {
+      if (p.membroId !== membroId) return false;
+      const enc = D().encontros.find((e) => e.id === p.encontroId);
+      return enc && (!desde || dataLocal(enc.data) >= desde);
+    }).length;
+    const leituras = leiturasDe(membroId).filter((l) => depois(l.em));
+    const seq = sequenciasDe(membroId);
+    return {
+      presencas,
+      lidos: leituras.length,
+      resenhas: leituras.filter((l) => l.resenha).length,
+      citacoes: D().citacoes.filter((c) => c.membroId === membroId && depois(c.em)).length,
+      indicacoes: D().candidatos.filter((c) => c.indicadoPor === membroId && depois(c.em)).length,
+      sequencia: seq.atual,
+      melhorSequencia: seq.melhor,
+      assinante: !!assinaturaAtiva(membroId)
+    };
+  }
+
+  function pontosDe(membroId, desde) {
+    const s = estatisticasDe(membroId, desde);
+    return s.presencas * PONTOS.presenca + s.lidos * PONTOS.leitura + s.resenhas * PONTOS.resenha
+      + s.citacoes * PONTOS.citacao + s.indicacoes * PONTOS.indicacao;
+  }
+
+  function nivelDe(pontos) {
+    let i = 0;
+    NIVEIS.forEach((n, k) => { if (pontos >= n.min) i = k; });
+    const prox = NIVEIS[i + 1];
+    return {
+      indice: i,
+      nome: NIVEIS[i].nome,
+      proximo: prox ? prox.nome : null,
+      faltam: prox ? prox.min - pontos : 0,
+      pct: prox ? Math.round(((pontos - NIVEIS[i].min) / (prox.min - NIVEIS[i].min)) * 100) : 100
+    };
+  }
+
+  const conquistasDe = (membroId) => {
+    const s = estatisticasDe(membroId);
+    return CONQUISTAS.filter((c) => c.ok(s));
+  };
+  // Mantido para os selos exibidos no painel e nas fichas.
+  const selosDe = (membroId) => conquistasDe(membroId).map((c) => `${c.icone} ${c.nome}`);
+
+  const CRITERIOS = { pontos: "Pontos", presencas: "Encontros", lidos: "Leituras" };
+  function ranking(criterio = "pontos", desde) {
+    return D().membros.map((m) => {
+      const s = estatisticasDe(m.id, desde);
+      return { m, pontos: pontosDe(m.id, desde), presencas: s.presencas, lidos: s.lidos, nivel: nivelDe(pontosDe(m.id)) };
+    }).sort((a, b) => (b[criterio] - a[criterio]) || (b.pontos - a.pontos) || a.m.nome.localeCompare(b.m.nome));
+  }
+  const posicaoDe = (membroId) => ranking().findIndex((r) => r.m.id === membroId) + 1;
+
+  const iniciais = (nome) => String(nome || "?").trim().split(/\s+/).slice(0, 2).map((p) => p[0]).join("").toUpperCase();
+  const primeiroNome = (m) => m.apelido || m.nome.split(" ")[0];
+
+  // Guarda a situação antes de uma ação e comemora o que mudou depois.
+  const retratoJogo = (membroId) => ({ pontos: pontosDe(membroId), nivel: nivelDe(pontosDe(membroId)).indice, conquistas: conquistasDe(membroId).map((c) => c.id) });
+  function celebrar(membroId, antes) {
+    if (!antes || membroId !== euId()) return;
+    const depois = retratoJogo(membroId);
+    const ganho = depois.pontos - antes.pontos;
+    const novas = CONQUISTAS.filter((c) => depois.conquistas.includes(c.id) && !antes.conquistas.includes(c.id));
+    if (depois.nivel > antes.nivel) {
+      const n = nivelDe(depois.pontos);
+      abrirModal(`<div class="celebracao">
+        <span class="celebracao__emblema">${depois.nivel + 1}</span>
+        <span class="sobrancelha">Você subiu de nível!</span>
+        <h3>${esc(n.nome)}</h3>
+        <p>${depois.pontos} pontos${n.proximo ? ` · faltam ${n.faltam} para <b>${esc(n.proximo)}</b>` : " · nível máximo do clube"}</p>
+        ${novas.length ? `<p>${novas.map((c) => `${c.icone} ${esc(c.nome)}`).join(" · ")}</p>` : ""}
+        <a class="botao" href="#ranking" data-fechar>Ver o ranking</a>
+      </div>`);
+    } else if (novas.length) {
+      avisar(`${novas[0].icone} Nova conquista: ${novas[0].nome}${ganho > 0 ? ` · +${ganho} pontos` : ""}`);
+    } else if (ganho > 0) {
+      avisar(`+${ganho} pontos ✦`);
+    }
+  }
+
+  /* ---------- Entrar / sair ---------- */
+  function abrirEntrar(depois) {
+    const membros = [...D().membros].sort((a, b) => a.nome.localeCompare(b.nome));
+    abrirModal(`
+      <span class="sobrancelha">Área do membro</span>
+      <h3>Entrar no clube</h3>
+      ${membros.length ? `
+      <form class="formulario" id="form-entrar">
+        <label>Seu e-mail ou nome
+          <input name="quem" id="entrar-quem" list="lista-entrar" autocomplete="email" required>
+          <datalist id="lista-entrar">${membros.map((m) => `<option value="${esc(m.email || m.nome)}">${esc(m.nome)}</option>`).join("")}</datalist>
+        </label>
+        <button class="botao" type="submit">Entrar</button>
+        <p class="aviso-texto" style="margin:0">Versão de teste: o acesso é só pelo e-mail ou nome da ficha. A senha chega junto com o ambiente online.</p>
+      </form>` : `<p>Ainda não há membros cadastrados.</p>`}
+      <p style="margin-top:16px">Ainda não tem ficha? <a href="#membros" data-fechar>Faça seu cadastro</a></p>`);
+    const f = $("#form-entrar");
+    if (!f) return;
+    f.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const q = normalizar(dadosDoFormulario(f).quem);
+      const achados = D().membros.filter((m) => normalizar(m.email) === q || normalizar(m.nome) === q || normalizar(m.apelido) === q);
+      const parecidos = achados.length ? achados : D().membros.filter((m) => normalizar(m.nome).startsWith(q));
+      if (parecidos.length !== 1) { avisar(parecidos.length ? "Mais de um membro com esse nome — use o e-mail" : "Não encontrei essa ficha"); return; }
+      definirEu(parecidos[0].id);
+      if (depois) { fecharModal(); depois(); } else boasVindas();
+      renderizar();
+    });
+  }
+
+  function boasVindas() {
+    const e = eu();
+    if (!e) return;
+    const p = pontosDe(e.id);
+    const n = nivelDe(p);
+    const s = estatisticasDe(e.id);
+    const pos = posicaoDe(e.id);
+    const proximo = [...D().encontros].filter((x) => dataLocal(x.data) >= hoje()).sort((a, b) => a.data.localeCompare(b.data))[0];
+    abrirModal(`<div class="celebracao">
+      <span class="avatar avatar--grande">${esc(iniciais(e.nome))}</span>
+      <span class="sobrancelha">Que bom te ver</span>
+      <h3>Olá, ${esc(primeiroNome(e))}!</h3>
+      <div class="mini-placar">
+        <div><strong>${p}</strong><span>pontos</span></div>
+        <div><strong>${pos ? pos + "º" : "—"}</strong><span>no ranking</span></div>
+        <div><strong>${s.sequencia}</strong><span>em sequência</span></div>
+      </div>
+      <p>Nível <b>${esc(n.nome)}</b>${n.proximo ? ` · faltam ${n.faltam} pontos para <b>${esc(n.proximo)}</b>` : ""}</p>
+      ${proximo ? `<p>Próximo encontro: <b>${formatarData(proximo.data)}</b>${proximo.local ? " · " + esc(proximo.local) : ""}</p>` : ""}
+      <div class="heroi__acoes" style="justify-content:center">
+        <a class="botao" href="#checkin" data-fechar>Minha jornada</a>
+        <a class="botao botao--secundario" href="#ranking" data-fechar>Ranking</a>
+      </div>
+    </div>`);
+  }
+
+  // Cartão da jornada: nível, barra de pontos, posição e conquistas.
+  function jornadaHTML(membroId) {
+    const m = membro(membroId);
+    const p = pontosDe(membroId);
+    const n = nivelDe(p);
+    const s = estatisticasDe(membroId);
+    const minhas = conquistasDe(membroId).map((c) => c.id);
+    return `<section class="jornada">
+      <div class="jornada__topo">
+        <span class="avatar avatar--grande">${esc(iniciais(m.nome))}</span>
+        <div>
+          <span class="sobrancelha">Nível ${n.indice + 1} · ${esc(n.nome)}</span>
+          <h3>${esc(m.nome)}</h3>
+          <div class="xp"><div class="xp__barra"><span style="width:${n.pct}%"></span></div>
+            <small>${p} pontos${n.proximo ? ` · faltam ${n.faltam} para ${esc(n.proximo)}` : " · nível máximo"}</small></div>
+        </div>
+      </div>
+      <div class="mini-placar">
+        <div><strong>${posicaoDe(membroId)}º</strong><span>no ranking</span></div>
+        <div><strong>${s.presencas}</strong><span>encontros</span></div>
+        <div><strong>${s.lidos}</strong><span>livros</span></div>
+        <div><strong>${s.sequencia}${s.sequencia >= 2 ? " 🔥" : ""}</strong><span>em sequência</span></div>
+      </div>
+      <h4 class="jornada__subtitulo">Conquistas · ${minhas.length} de ${CONQUISTAS.length}</h4>
+      <ul class="conquistas">
+        ${CONQUISTAS.map((c) => `<li class="conquista ${minhas.includes(c.id) ? "" : "conquista--bloqueada"}" title="${esc(c.meta)}">
+          <span class="conquista__icone">${c.icone}</span><b>${esc(c.nome)}</b><small>${esc(c.meta)}</small></li>`).join("")}
+      </ul>
+    </section>`;
+  }
+
+  /* =========================================================
+     RANKING
+     ========================================================= */
+  const filtroRanking = { criterio: "presencas", periodo: "ano" };
+  function telaRanking() {
+    const ano = new Date().getFullYear();
+    const desde = filtroRanking.periodo === "ano" ? new Date(ano, 0, 1) : null;
+    const lista = ranking(filtroRanking.criterio, desde);
+    const crit = filtroRanking.criterio;
+    const valor = (r) => r[crit];
+    const unidade = { pontos: "pts", presencas: "encontros", lidos: "livros" }[crit];
+    const podio = lista.slice(0, 3);
+    const ordemPodio = [podio[1], podio[0], podio[2]].filter(Boolean);
+    conteudo.innerHTML = `
+      ${cabecalho("Ranking do clube", "Quem mais foi aos encontros, quem mais leu e quem mais pontuou. Cada presença vale 50 pontos.")}
+      ${seletorMembro()}
+      <div class="barra-acoes">
+        <div class="pilulas" role="group" aria-label="Critério">
+          ${Object.entries(CRITERIOS).map(([k, v]) => `<button type="button" class="pilula ${crit === k ? "ativa" : ""}" data-criterio="${k}">${v}</button>`).join("")}
+        </div>
+        <div class="pilulas" role="group" aria-label="Período">
+          <button type="button" class="pilula ${filtroRanking.periodo === "ano" ? "ativa" : ""}" data-periodo="ano">Em ${ano}</button>
+          <button type="button" class="pilula ${filtroRanking.periodo === "geral" ? "ativa" : ""}" data-periodo="geral">Desde sempre</button>
+        </div>
+      </div>
+      ${lista.length ? `
+      <div class="podio">
+        ${ordemPodio.map((r) => {
+          const pos = lista.indexOf(r) + 1;
+          return `<div class="podio__lugar podio__lugar--${pos} ${r.m.id === euId() ? "eu" : ""}">
+            <span class="avatar">${esc(iniciais(r.m.nome))}</span>
+            <b>${esc(primeiroNome(r.m))}</b>
+            <small>${valor(r)} ${unidade}</small>
+            <div class="podio__degrau">${pos}º</div>
+          </div>`;
+        }).join("")}
+      </div>
+      <div class="rolagem-tabela"><table class="tabela tabela--ranking">
+        <thead><tr><th>#</th><th>Membro</th><th>Nível</th><th>Encontros</th><th>Livros</th><th>Pontos</th></tr></thead>
+        <tbody>${lista.map((r, i) => `<tr class="${r.m.id === euId() ? "eu" : ""}">
+          <td>${i + 1}º</td><td><b>${esc(r.m.apelido || r.m.nome)}</b>${r.m.id === euId() ? " <span class='selo'>você</span>" : ""}</td>
+          <td>${esc(r.nivel.nome)}</td><td>${r.presencas}</td><td>${r.lidos}</td><td><b>${r.pontos}</b></td></tr>`).join("")}</tbody>
+      </table></div>` : `<p class="vazio">O ranking aparece assim que houver membros cadastrados.</p>`}
+
+      <div class="grade" style="margin-top:36px">
+        <div class="ficha">
+          <h4>Como ganhar pontos</h4>
+          <dl>
+            <dt>Encontro</dt><dd>+${PONTOS.presenca} por presença (presencial ou online)</dd>
+            <dt>Livro lido</dt><dd>+${PONTOS.leitura} por livro registrado</dd>
+            <dt>Resenha</dt><dd>+${PONTOS.resenha} por resenha escrita</dd>
+            <dt>Citação</dt><dd>+${PONTOS.citacao} por trecho no mural</dd>
+            <dt>Indicação</dt><dd>+${PONTOS.indicacao} por livro indicado</dd>
+          </dl>
+        </div>
+        <div class="ficha">
+          <h4>Níveis</h4>
+          <ol class="niveis">${NIVEIS.map((n, i) => `<li><b>${esc(n.nome)}</b><span>${n.min} pts</span></li>`).join("")}</ol>
+        </div>
+      </div>`;
+    ligarSeletorMembro();
+    $$("[data-criterio]").forEach((b) => b.addEventListener("click", () => { filtroRanking.criterio = b.dataset.criterio; telaRanking(); }));
+    $$("[data-periodo]").forEach((b) => b.addEventListener("click", () => { filtroRanking.periodo = b.dataset.periodo; telaRanking(); }));
+  }
+
+  /* =========================================================
+     CLUBE ONLINE
+     ========================================================= */
+  const dinheiro = (v) => Number(v || 0).toLocaleString("pt-BR", { style: "currency", currency: "BRL" });
+  function assinaturaAtiva(membroId) {
+    return (D().assinaturas || []).find((a) => a.membroId === membroId && a.status === "ativa" && dataLocal(a.renovaEm) >= hoje()) || null;
+  }
+  const planoPorId = (id) => (D().online.planos || []).find((p) => p.id === id);
+  function somarPeriodo(data, periodo) {
+    const d = new Date(data);
+    if (periodo === "ano") d.setFullYear(d.getFullYear() + 1); else d.setMonth(d.getMonth() + 1);
+    return d.toISOString().slice(0, 10);
+  }
+
+  function telaOnline() {
+    const cfg = D().online;
+    const e = eu();
+    const assinatura = e ? assinaturaAtiva(e.id) : null;
+    const encontrosOnline = [...D().encontros].filter((x) => x.tipo === "online").sort((a, b) => a.data.localeCompare(b.data));
+    const proximoOnline = encontrosOnline.find((x) => dataLocal(x.data) >= hoje());
+    const assinantes = (D().assinaturas || []).filter((a) => a.status === "ativa");
+
+    conteudo.innerHTML = `
+      <section class="faixa-online">
+        <div>
+          <span class="sobrancelha">Clube Online</span>
+          <h2>Leia com a gente de <em>onde estiver</em></h2>
+          <p>Encontros ao vivo pela internet, sala exclusiva com gravações e materiais de leitura. Para participar, é só assinar.</p>
+          ${assinatura
+            ? `<p class="status-assinatura">✓ Você é assinante · plano ${esc(planoPorId(assinatura.plano)?.nome || assinatura.plano)} · renova em ${formatarData(assinatura.renovaEm)}</p>`
+            : `<a class="botao" href="#" data-ir-planos>Quero assinar</a>`}
+        </div>
+        <ul class="lista-beneficios-online">${(cfg.beneficios || []).map((b) => `<li>${esc(b)}</li>`).join("")}</ul>
+      </section>
+
+      ${assinatura ? `
+      <h3 class="titulo-bloco">Sua sala</h3>
+      <div class="grade">
+        <div class="ficha ficha--sala">
+          <span class="sobrancelha">Próximo encontro online</span>
+          ${proximoOnline ? `<h4>${formatarData(proximoOnline.data)}${proximoOnline.hora ? " · " + esc(proximoOnline.hora) : ""}</h4>
+            <p>${esc(livro(proximoOnline.livroId)?.titulo || proximoOnline.titulo || "Encontro do clube")}</p>
+            ${(proximoOnline.link || cfg.sala) ? `<a class="botao" href="${esc(proximoOnline.link || cfg.sala)}" target="_blank" rel="noopener">${icone("tela")} Entrar na sala</a>` : `<p class="aviso-texto">O link da sala aparece aqui perto do dia.</p>`}`
+            : `<p>Nenhum encontro online marcado ainda. Fique de olho na agenda!</p>`}
+        </div>
+        <div class="ficha">
+          <span class="sobrancelha">Materiais e gravações</span>
+          ${(cfg.materiais || []).length ? `<ul class="lista-materiais">${cfg.materiais.map((mt) => `<li><a href="${esc(mt.link)}" target="_blank" rel="noopener">${esc(mt.titulo)}</a>${mt.descricao ? `<small>${esc(mt.descricao)}</small>` : ""}
+            <button class="botao botao--pequeno botao--perigo somente-curadoria" data-excluir-material="${mt.id}">Remover</button></li>`).join("")}</ul>`
+            : `<p>Os materiais de leitura e as gravações dos encontros vão aparecer aqui.</p>`}
+        </div>
+      </div>
+      <p style="margin-top:14px"><a href="#" id="gerenciar-assinatura">Gerenciar assinatura</a></p>` : ""}
+
+      <h3 class="titulo-bloco" id="planos">Planos</h3>
+      ${cfg.valoresDeExemplo ? `<p class="aviso-texto">Valores de exemplo — a definir.</p>` : ""}
+      <div class="planos">
+        ${(cfg.planos || []).map((p) => `<article class="plano ${p.destaque ? "plano--destaque" : ""}">
+          ${p.destaque ? `<span class="plano__selo">${esc(p.destaque)}</span>` : ""}
+          <span class="sobrancelha">${esc(p.nome)}</span>
+          <p class="plano__preco"><strong>${dinheiro(p.preco)}</strong><span>/${esc(p.periodo)}</span></p>
+          ${p.periodo === "ano" ? `<p class="plano__equivale">equivale a ${dinheiro(p.preco / 12)} por mês</p>` : ""}
+          <p>${esc(p.descricao || "")}</p>
+          ${assinatura && assinatura.plano === p.id
+            ? `<span class="botao botao--secundario" aria-disabled="true">Seu plano atual</span>`
+            : `<button class="botao ${p.destaque ? "" : "botao--verde"}" type="button" data-assinar="${p.id}">${assinatura ? "Mudar para este plano" : "Assinar " + esc(p.nome.toLowerCase())}</button>`}
+        </article>`).join("")}
+      </div>
+      <p class="legenda-estante" style="margin-top:14px">Pagamento por Pix ou cartão de crédito, direto no site. Cancele quando quiser.</p>
+
+      <h3 class="titulo-bloco">Dúvidas sobre o Clube Online</h3>
+      <div class="perguntas">
+        <details><summary>Qual a diferença para o clube presencial?</summary><p>O clube presencial continua igual. O Clube Online é para quem quer participar dos encontros pela internet e ter acesso à sala com gravações e materiais.</p></details>
+        <details><summary>Como pago?</summary><p>Escolha o plano, selecione Pix ou cartão de crédito e conclua o pagamento no próprio site. A assinatura é ativada assim que o pagamento é aprovado.</p></details>
+        <details><summary>Posso cancelar?</summary><p>Pode, a qualquer momento, em “Gerenciar assinatura”. O acesso continua até o fim do período já pago.</p></details>
+      </div>
+
+      <div class="somente-curadoria">
+        <h3 class="titulo-bloco">Curadoria do Clube Online</h3>
+        <div class="grade">
+          <form class="formulario ficha" id="form-online-planos">
+            <h4>Planos e sala</h4>
+            ${(cfg.planos || []).map((p) => `<label>Preço do plano ${esc(p.nome)} (R$/${esc(p.periodo)}) <input name="preco-${p.id}" type="number" step="0.01" min="0" value="${p.preco}"></label>`).join("")}
+            <label>Link padrão da sala (Zoom, Meet…) <input name="sala" type="url" value="${esc(cfg.sala || "")}" placeholder="https://"></label>
+            <label class="caixa"><input type="checkbox" name="valoresDeExemplo" ${cfg.valoresDeExemplo ? "checked" : ""}> Mostrar aviso “valores de exemplo”</label>
+            <button class="botao" type="submit">Salvar</button>
+          </form>
+          <form class="formulario ficha" id="form-material">
+            <h4>Novo material ou gravação</h4>
+            <label>Título <input name="titulo" required></label>
+            <label>Link <input name="link" type="url" required placeholder="https://"></label>
+            <label>Descrição <input name="descricao"></label>
+            <button class="botao" type="submit">Adicionar</button>
+          </form>
+        </div>
+        <h3 class="titulo-bloco">Assinantes (${assinantes.length})</h3>
+        ${assinantes.length ? `<div class="rolagem-tabela"><table class="tabela">
+          <thead><tr><th>Membro</th><th>Plano</th><th>Pagamento</th><th>Desde</th><th>Renova em</th></tr></thead>
+          <tbody>${assinantes.map((a) => `<tr><td>${esc(membro(a.membroId)?.nome || "—")}</td><td>${esc(planoPorId(a.plano)?.nome || a.plano)}</td>
+            <td>${a.metodo === "pix" ? "Pix" : "Cartão"}${a.demo ? " · teste" : ""}</td><td>${formatarData(a.inicio)}</td><td>${formatarData(a.renovaEm)}</td></tr>`).join("")}</tbody>
+        </table></div>` : `<p class="vazio">Nenhum assinante ainda.</p>`}
+        <p><small>Encontros online são marcados na aba Encontros, escolhendo o tipo “Online”.</small></p>
+      </div>`;
+
+    const irPlanos = $("[data-ir-planos]");
+    if (irPlanos) irPlanos.addEventListener("click", (ev) => { ev.preventDefault(); $("#planos").scrollIntoView({ behavior: "smooth" }); });
+    $$("[data-assinar]").forEach((b) => b.addEventListener("click", () => {
+      const iniciar = () => checkout(b.dataset.assinar);
+      eu() ? iniciar() : abrirEntrar(iniciar);
+    }));
+    const ger = $("#gerenciar-assinatura");
+    if (ger) ger.addEventListener("click", (ev) => {
+      ev.preventDefault();
+      confirmar("Cancelar a assinatura do Clube Online? O acesso à sala termina agora nesta versão de teste.", () => {
+        assinatura.status = "cancelada";
+        Dados.salvar(); avisar("Assinatura cancelada"); telaOnline();
+      });
+    });
+    $("#form-online-planos").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      const f = dadosDoFormulario(ev.target);
+      cfg.planos.forEach((p) => { const v = Number(f["preco-" + p.id]); if (!Number.isNaN(v)) p.preco = v; });
+      cfg.sala = f.sala;
+      cfg.valoresDeExemplo = !!f.valoresDeExemplo;
+      Dados.salvar(); avisar("Clube Online atualizado"); telaOnline();
+    });
+    $("#form-material").addEventListener("submit", (ev) => {
+      ev.preventDefault();
+      cfg.materiais = cfg.materiais || [];
+      cfg.materiais.push({ id: Dados.novoId("mt"), ...dadosDoFormulario(ev.target) });
+      Dados.salvar(); avisar("Material adicionado"); telaOnline();
+    });
+    $$("[data-excluir-material]").forEach((b) => b.addEventListener("click", () => {
+      cfg.materiais = cfg.materiais.filter((mt) => mt.id !== b.dataset.excluirMaterial);
+      Dados.salvar(); telaOnline();
+    }));
+  }
+
+  // Checkout em etapas: resumo e forma de pagamento → pagamento → confirmação.
+  function checkout(planoId) {
+    const plano = planoPorId(planoId);
+    const m = eu();
+    if (!plano || !m) return;
+    let metodo = "pix";
+    const avisoDemo = Pagamento.ehDemo ? `<p class="aviso-demo"><b>Ambiente de teste:</b> o pagamento é simulado e nada é cobrado. Na versão online, esta etapa abre o checkout seguro do provedor de pagamento — os dados do cartão ficam só com ele, nunca com o site.</p>` : "";
+
+    const etapa1 = () => {
+      abrirModal(`
+        <ol class="etapas"><li class="ativa">Plano</li><li>Pagamento</li><li>Pronto</li></ol>
+        <h3>Assinar o Clube Online</h3>
+        <div class="resumo-plano"><span>Plano ${esc(plano.nome)}</span><strong>${dinheiro(plano.preco)}<small>/${esc(plano.periodo)}</small></strong></div>
+        <p>Assinatura em nome de <b>${esc(m.nome)}</b>${m.email ? ` · ${esc(m.email)}` : ""}.</p>
+        <fieldset class="metodos"><legend>Forma de pagamento</legend>
+          <label class="metodo"><input type="radio" name="metodo" value="pix" checked><span><b>Pix</b><small>Aprovação na hora</small></span></label>
+          <label class="metodo"><input type="radio" name="metodo" value="cartao"><span><b>Cartão de crédito</b><small>Cobrança automática a cada ${esc(plano.periodo)}</small></span></label>
+        </fieldset>
+        ${avisoDemo}
+        <button class="botao" type="button" id="checkout-continuar" style="width:100%">Continuar para o pagamento</button>`);
+      $("#checkout-continuar").addEventListener("click", () => {
+        metodo = ($("input[name=metodo]:checked") || {}).value || "pix";
+        etapa2();
+      });
+    };
+
+    const etapa2 = () => {
+      abrirModal(`
+        <ol class="etapas"><li class="feita">Plano</li><li class="ativa">Pagamento</li><li>Pronto</li></ol>
+        <h3>${metodo === "pix" ? "Pagar com Pix" : "Pagar com cartão"}</h3>
+        <div class="resumo-plano"><span>Plano ${esc(plano.nome)}</span><strong>${dinheiro(plano.preco)}<small>/${esc(plano.periodo)}</small></strong></div>
+        <div class="espaco-provedor">
+          ${icone(metodo === "pix" ? "pix" : "cartao")}
+          <p>${metodo === "pix"
+            ? "Aqui aparece o QR Code e o código “copia e cola” do Pix, gerados pelo provedor de pagamento."
+            : "Aqui aparece o formulário seguro do provedor de pagamento para os dados do cartão."}</p>
+        </div>
+        ${avisoDemo}
+        <div class="ficha__acoes">
+          <button class="botao" type="button" id="checkout-pagar">${Pagamento.ehDemo ? "Simular pagamento aprovado" : "Pagar"}</button>
+          <button class="botao botao--secundario" type="button" id="checkout-voltar">Voltar</button>
+        </div>`);
+      $("#checkout-voltar").addEventListener("click", etapa1);
+      $("#checkout-pagar").addEventListener("click", () => {
+        const antes = retratoJogo(m.id);
+        Pagamento.iniciar({ plano, membro: m, metodo }).then((r) => {
+          if (!r.aprovado) { avisar("Pagamento não aprovado"); return; }
+          D().assinaturas = (D().assinaturas || []).map((a) => (a.membroId === m.id && a.status === "ativa" ? { ...a, status: "substituida" } : a));
+          const inicio = new Date().toISOString().slice(0, 10);
+          D().assinaturas.push({ id: Dados.novoId("as"), membroId: m.id, plano: plano.id, metodo, status: "ativa", inicio, renovaEm: somarPeriodo(inicio, plano.periodo), referencia: r.referencia, demo: Pagamento.ehDemo });
+          Dados.salvar();
+          etapa3(antes);
+        }).catch((err) => avisar(err.message));
+      });
+    };
+
+    const etapa3 = (antes) => {
+      const a = assinaturaAtiva(m.id);
+      const novas = CONQUISTAS.filter((c) => conquistasDe(m.id).some((x) => x.id === c.id) && !antes.conquistas.includes(c.id));
+      abrirModal(`
+        <ol class="etapas"><li class="feita">Plano</li><li class="feita">Pagamento</li><li class="ativa">Pronto</li></ol>
+        <div class="celebracao">
+          <span class="celebracao__emblema">✓</span>
+          <span class="sobrancelha">Assinatura ativa</span>
+          <h3>Bem-vindo(a) ao Clube Online, ${esc(primeiroNome(m))}!</h3>
+          <p>Plano ${esc(plano.nome)} · renova em ${formatarData(a.renovaEm)}</p>
+          ${novas.length ? `<p>${novas.map((c) => `${c.icone} Nova conquista: <b>${esc(c.nome)}</b>`).join("<br>")}</p>` : ""}
+          <a class="botao" href="#online" data-fechar id="checkout-ir">Ir para a minha sala</a>
+        </div>`);
+      $("#checkout-ir").addEventListener("click", () => { if (rotaAtual() === "online") setTimeout(telaOnline, 0); });
+    };
+
+    etapa1();
   }
 
   /* =========================================================
@@ -395,18 +875,28 @@
       const fiz = eu_ && presentes.some((p) => p.membroId === eu_.id);
       const vou = eu_ && confirmados.includes(eu_.id);
       const ehHoje = d.getTime() === h.getTime();
+      const online = e.tipo === "online";
+      const assinante = eu_ && assinaturaAtiva(eu_.id);
+      const linkSala = e.link || D().online.sala;
+      let acao = "";
+      if (online && !assinante && !fiz) {
+        acao = `<a class="botao botao--pequeno botao--secundario" href="#online">Assinar para participar</a>`;
+      } else if (eu_) {
+        acao = passado || ehHoje
+          ? `<button class="botao botao--pequeno ${fiz ? "botao--secundario" : "botao--verde"}" data-checkin="${e.id}">${fiz ? "✓ Estive lá" : "Fazer check-in"}</button>`
+          : `<button class="botao botao--pequeno ${vou ? "botao--secundario" : ""}" data-confirmar="${e.id}">${vou ? "✓ Presença confirmada" : "Vou!"}</button>`;
+        if (online && assinante && linkSala && !passado) acao += `<a class="botao botao--pequeno botao--verde" href="${esc(linkSala)}" target="_blank" rel="noopener">Entrar na sala</a>`;
+      }
       return `<article class="encontro ${passado ? "encontro--passado" : ""}">
         <div class="encontro__data"><strong>${d.getDate()}</strong><span>${MESES[d.getMonth()]} ${d.getFullYear()}</span></div>
         <div>
-          <h4>${l ? esc(l.titulo) : esc(e.titulo || "Encontro do clube")}</h4>
-          <p>${e.hora ? esc(e.hora) + " · " : ""}${esc(e.local || "Local a definir")}</p>
+          <h4>${l ? esc(l.titulo) : esc(e.titulo || "Encontro do clube")} ${online ? `<span class="chip-online">Online · assinantes</span>` : ""}</h4>
+          <p>${e.hora ? esc(e.hora) + " · " : ""}${esc(e.local || (online ? "Sala online" : "Local a definir"))}</p>
           ${e.obs ? `<p><i>${esc(e.obs)}</i></p>` : ""}
           <p>${passado || ehHoje ? `${presentes.length} presença(s) registrada(s)` : `${confirmados.length} confirmação(ões)`}</p>
         </div>
         <div class="encontro__acoes">
-          ${eu_ ? (passado || ehHoje
-            ? `<button class="botao botao--pequeno ${fiz ? "botao--secundario" : "botao--verde"}" data-checkin="${e.id}">${fiz ? "✓ Estive lá" : "Fazer check-in"}</button>`
-            : `<button class="botao botao--pequeno ${vou ? "botao--secundario" : ""}" data-confirmar="${e.id}">${vou ? "✓ Presença confirmada" : "Vou!"}</button>`) : ""}
+          ${acao}
           <button class="botao botao--pequeno botao--secundario somente-curadoria" data-lista="${e.id}">Lista</button>
           <button class="botao botao--pequeno botao--perigo somente-curadoria" data-excluir-encontro="${e.id}">Excluir</button>
         </div>
@@ -432,7 +922,10 @@
                 ${livrosOrdenados(D().livros).map((l) => `<option value="${l.id}">${esc(l.titulo)}</option>`).join("")}
               </select></label>
             <label>Título (se não houver livro) <input name="titulo"></label>
-            <label>Local <input name="local" placeholder="Café, livraria, online…"></label>
+            <label>Local <input name="local" placeholder="Café, livraria…"></label>
+            <label>Tipo
+              <select name="tipo"><option value="presencial">Presencial</option><option value="online">Online (só assinantes)</option></select></label>
+            <label>Link da sala (se online) <input name="link" type="url" placeholder="https://"></label>
           </div>
           <label>Observações <textarea name="obs" rows="2"></textarea></label>
           <button class="botao" type="submit">Marcar no calendário</button>
@@ -471,9 +964,11 @@
 
   function alternarPresenca(membroId, encontroId) {
     const idx = D().presencas.findIndex((p) => p.membroId === membroId && p.encontroId === encontroId);
-    if (idx >= 0) { D().presencas.splice(idx, 1); avisar("Check-in desfeito"); }
-    else { D().presencas.push({ membroId, encontroId, em: new Date().toISOString() }); avisar("Check-in feito! Bom encontro ❦"); }
+    if (idx >= 0) { D().presencas.splice(idx, 1); Dados.salvar(); avisar("Check-in desfeito"); return; }
+    const antes = retratoJogo(membroId);
+    D().presencas.push({ membroId, encontroId, em: new Date().toISOString() });
     Dados.salvar();
+    if (membroId === euId()) celebrar(membroId, antes); else avisar("Presença marcada");
   }
 
   function listaPresenca(encontroId) {
@@ -505,19 +1000,12 @@
       const minhasLeituras = leiturasDe(eu_.id);
       const minhasPresencas = presencasDe(eu_.id);
       const encontros = [...D().encontros].filter((e) => dataLocal(e.data) <= hoje()).sort((a, b) => b.data.localeCompare(a.data));
-      const selos = selosDe(eu_.id);
       corpo = `
-        <div class="numeros">
-          <div class="numero"><strong>${minhasLeituras.length}</strong><span>livros lidos</span></div>
-          <div class="numero"><strong>${minhasPresencas.length}</strong><span>encontros</span></div>
-          <div class="numero"><strong>${D().livros.length ? Math.round((minhasLeituras.length / D().livros.length) * 100) : 0}%</strong><span>da estante</span></div>
-        </div>
+        ${jornadaHTML(eu_.id)}
         <div class="progresso">
           <div class="progresso__rotulo"><span>Sua estante</span><span>${minhasLeituras.length} de ${D().livros.length} livros</span></div>
           <div class="progresso__barra"><span style="width:${D().livros.length ? (minhasLeituras.length / D().livros.length) * 100 : 0}%"></span></div>
         </div>
-        ${selos.length ? `<div class="selos" style="margin-bottom:10px">${selos.map((s) => `<span class="selo">${s}</span>`).join("")}</div>` : ""}
-
         <h3 class="titulo-bloco">Livros que li</h3>
         <ul class="lista-check">
           ${livrosOrdenados(D().livros).map((l) => {
@@ -534,6 +1022,7 @@
         <h3 class="titulo-bloco">Encontros em que estive</h3>
         ${encontros.length ? `<ul class="lista-check">${encontros.map((e) => {
           const fui = minhasPresencas.some((p) => p.encontroId === e.id);
+          if (e.tipo === "online" && !fui && !assinaturaAtiva(eu_.id)) return "";
           return `<li class="${fui ? "feito" : ""}"><span><b>${formatarData(e.data)}</b>
             <small>${esc(livro(e.livroId)?.titulo || e.titulo || "Encontro")} · ${esc(e.local || "")}</small></span>
             <button class="botao botao--pequeno ${fui ? "botao--secundario" : "botao--verde"}" data-presenca="${e.id}">${fui ? "✓ Estive lá" : "Check-in"}</button></li>`;
@@ -541,7 +1030,7 @@
     }
 
     conteudo.innerHTML = `
-      ${cabecalho("Check-in", "Seu diário de leituras e de encontros")}
+      ${cabecalho("Minha jornada", "Seu diário de leituras e de encontros. Cada check-in soma pontos, sobe seu nível e libera conquistas.")}
       ${seletorMembro()}
       ${corpo}`;
     ligarSeletorMembro();
@@ -576,9 +1065,12 @@
     $("#form-leitura").addEventListener("submit", (e) => {
       e.preventDefault();
       const f = dadosDoFormulario(e.target);
+      const antes = retratoJogo(eu_.id);
       if (existente) Object.assign(existente, { nota, resenha: f.resenha });
       else D().leituras.push({ membroId: eu_.id, livroId, nota, resenha: f.resenha, em: new Date().toISOString() });
-      Dados.salvar(); fecharModal(); avisar("Leitura registrada ✦"); renderizar();
+      Dados.salvar(); fecharModal(); renderizar();
+      const ganhou = pontosDe(eu_.id) > antes.pontos;
+      if (ganhou) celebrar(eu_.id, antes); else avisar("Leitura salva ✦");
     });
     const desfazer = $("#desfazer-leitura");
     if (desfazer) desfazer.addEventListener("click", () => {
@@ -656,7 +1148,7 @@
       const novo = { id: Dados.novoId("m"), numero, ...f, generos, cadastradoEm: new Date().toISOString() };
       D().membros.push(novo);
       definirEu(novo.id);
-      Dados.salvar(); avisar(`Bem-vindo(a), ${novo.apelido || novo.nome.split(" ")[0]}!`); telaMembros();
+      Dados.salvar(); telaMembros(); boasVindas();
     });
     $("#busca-membro").addEventListener("input", (e) => {
       const q = e.target.value.toLowerCase();
@@ -853,8 +1345,9 @@
     if (fi) fi.addEventListener("submit", (e) => {
       e.preventDefault();
       const f = dadosDoFormulario(fi);
+      const antes = retratoJogo(eu_.id);
       candidatos.push({ id: Dados.novoId("c"), ...f, indicadoPor: eu_.id, em: new Date().toISOString() });
-      Dados.salvar(); avisar("Indicação registrada"); telaVotacao();
+      Dados.salvar(); telaVotacao(); celebrar(eu_.id, antes);
     });
   }
 
@@ -889,8 +1382,9 @@
     const fc = $("#form-citacao");
     if (fc) fc.addEventListener("submit", (e) => {
       e.preventDefault();
+      const antes = retratoJogo(eu_.id);
       D().citacoes.push({ id: Dados.novoId("q"), ...dadosDoFormulario(fc), membroId: eu_.id, em: new Date().toISOString() });
-      Dados.salvar(); avisar("Citação no mural"); telaCitacoes();
+      Dados.salvar(); telaCitacoes(); celebrar(eu_.id, antes);
     });
     $$("[data-excluir-citacao]").forEach((a) => a.addEventListener("click", (e) => {
       e.preventDefault();
@@ -909,8 +1403,7 @@
     const mesAtual = new Date().getMonth();
     const aniversariantes = membros.filter((m) => m.nascimento && dataLocal(m.nascimento).getMonth() === mesAtual)
       .sort((a, b) => dataLocal(a.nascimento).getDate() - dataLocal(b.nascimento).getDate());
-    const ranking = membros.map((m) => ({ m, lidos: leiturasDe(m.id).length, pres: presencasDe(m.id).length }))
-      .sort((a, b) => (b.lidos + b.pres) - (a.lidos + a.pres));
+    const quadro = ranking("pontos").slice(0, 5);
     const melhores = livros.map((l) => ({ l, media: mediaNotas(l.id), n: leitoresDe(l.id).filter((x) => x.nota).length }))
       .filter((x) => x.n).sort((a, b) => b.media - a.media).slice(0, 5);
     const autores = {};
@@ -931,11 +1424,10 @@
       ${aniversariantes.length ? `<p>${aniversariantes.map((m) => `<b>${esc(m.apelido || m.nome)}</b> (dia ${dataLocal(m.nascimento).getDate()})`).join(" · ")}</p>` : `<p class="vazio">Ninguém sopra velinhas este mês.</p>`}
 
       <h3 class="titulo-bloco">Quadro de honra</h3>
-      ${ranking.length ? `<div class="rolagem-tabela"><table class="tabela">
-        <thead><tr><th>Membro</th><th>Livros</th><th>Encontros</th><th>Selos</th></tr></thead>
-        <tbody>${ranking.map((r) => `<tr><td>${esc(r.m.apelido || r.m.nome)}</td><td>${r.lidos}</td><td>${r.pres}</td>
-          <td><div class="selos">${selosDe(r.m.id).map((s) => `<span class="selo">${s}</span>`).join("")}</div></td></tr>`).join("")}</tbody>
-      </table></div>` : `<p class="vazio">O ranking aparece quando houver membros.</p>`}
+      ${quadro.length ? `<div class="rolagem-tabela"><table class="tabela">
+        <thead><tr><th>Membro</th><th>Nível</th><th>Encontros</th><th>Livros</th><th>Pontos</th></tr></thead>
+        <tbody>${quadro.map((r) => `<tr><td>${esc(r.m.apelido || r.m.nome)}</td><td>${esc(r.nivel.nome)}</td><td>${r.presencas}</td><td>${r.lidos}</td><td><b>${r.pontos}</b></td></tr>`).join("")}</tbody>
+      </table></div><p style="margin-top:12px"><a href="#ranking">Ver o ranking completo →</a></p>` : `<p class="vazio">O ranking aparece quando houver membros.</p>`}
 
       <div class="grade" style="margin-top:10px">
         <div>
@@ -964,6 +1456,12 @@
           <label class="botao botao--secundario" style="flex-direction:row;font-variant:normal">Importar backup<input type="file" id="backup-importar" accept="application/json" hidden></label>
           <button class="botao botao--perigo" id="backup-zerar" type="button">Apagar tudo</button>
         </div>
+        <h3 class="titulo-bloco">Dados de demonstração</h3>
+        <p><small>Cria membros e encontros fictícios (marcados como demonstração) para ver o ranking, o pódio e as conquistas funcionando. Remova antes de usar o site de verdade.</small></p>
+        <div class="ficha__acoes">
+          <button class="botao botao--verde" id="demo-carregar" type="button">Carregar demonstração</button>
+          <button class="botao botao--perigo" id="demo-remover" type="button">Remover demonstração</button>
+        </div>
       </div>`;
 
     $("#form-clube").addEventListener("submit", (e) => {
@@ -980,11 +1478,46 @@
       try { Dados.importar(await arq.text()); aplicarIdentidade(); avisar("Backup importado"); renderizar(); }
       catch (err) { avisar("Não consegui ler esse arquivo"); }
     });
+    $("#demo-carregar").addEventListener("click", () => { carregarDemonstracao(); avisar("Demonstração carregada"); telaPainel(); });
+    $("#demo-remover").addEventListener("click", () => { removerDemonstracao(); avisar("Demonstração removida"); telaPainel(); });
     $("#backup-zerar").addEventListener("click", () => {
       confirmar("Apagar TODOS os dados do clube neste aparelho? Baixe um backup antes.", () => {
         Dados.reiniciar(); definirEu(null); aplicarIdentidade(); renderizar();
       });
     });
+  }
+
+  /* ---------- Demonstração (só para testes) ---------- */
+  function removerDemonstracao() {
+    const ids = D().membros.filter((m) => m.demo).map((m) => m.id);
+    const encs = D().encontros.filter((e) => e.demo).map((e) => e.id);
+    D().membros = D().membros.filter((m) => !m.demo);
+    D().encontros = D().encontros.filter((e) => !e.demo);
+    D().presencas = D().presencas.filter((p) => !ids.includes(p.membroId) && !encs.includes(p.encontroId));
+    D().leituras = D().leituras.filter((l) => !ids.includes(l.membroId));
+    D().assinaturas = (D().assinaturas || []).filter((a) => !ids.includes(a.membroId));
+    if (ids.includes(euId())) definirEu(null);
+    Dados.salvar();
+  }
+  function carregarDemonstracao() {
+    removerDemonstracao();
+    const nomes = ["Helena Duarte (demo)", "Rafael Moura (demo)", "Lívia Prado (demo)", "Teo Nogueira (demo)", "Marina Assis (demo)"];
+    const ano = new Date().getFullYear();
+    const encs = [];
+    for (let i = 0; i < 6; i += 1) {
+      const d = new Date(ano, new Date().getMonth() - 6 + i, 12);
+      encs.push({ id: "demo-e" + i, data: d.toISOString().slice(0, 10), local: "Encontro de demonstração", titulo: "Encontro de demonstração", tipo: "presencial", confirmados: [], demo: true });
+    }
+    D().encontros.push(...encs);
+    const presencas = [[0, 1, 2, 3, 4, 5], [0, 2, 3, 5], [1, 2, 3, 4], [5], [0, 1]];
+    const livrosRecentes = livrosOrdenados(D().livros.filter((l) => !l.exemplo)).slice(-8);
+    nomes.forEach((nome, i) => {
+      const id = "demo-m" + i;
+      D().membros.push({ id, nome, email: `demo${i + 1}@exemplo.com`, numero: 900 + i, demo: true });
+      presencas[i].forEach((k) => D().presencas.push({ membroId: id, encontroId: encs[k].id, em: encs[k].data }));
+      livrosRecentes.slice(0, [6, 3, 5, 1, 2][i]).forEach((l) => D().leituras.push({ membroId: id, livroId: l.id, nota: 4, resenha: i === 0 ? "Releria." : "", em: new Date().toISOString() }));
+    });
+    Dados.salvar();
   }
 
   /* =========================================================
@@ -1025,6 +1558,8 @@
     const c = criadora();
     const recentes = livrosOrdenados(livros).slice(-14);
     const parceiros = D().parceiros.slice(0, 3);
+    const anoAtual = new Date(new Date().getFullYear(), 0, 1);
+    const podioInicio = ranking("presencas", anoAtual).filter((r) => r.presencas > 0).slice(0, 3);
 
     conteudo.innerHTML = `
       <section class="heroi">
@@ -1087,6 +1622,36 @@
           </div>
         </div>
       </section>` : ""}
+
+      ${podioInicio.length ? `
+      <section class="secao secao--papel2">
+        <div class="container">
+          <div class="secao__topo">
+            <div><span class="sobrancelha">Ranking ${new Date().getFullYear()}</span><h2>Quem mais foi aos <em>encontros</em></h2></div>
+            <p>Cada presença vale 50 pontos, cada livro lido 30. Suba de nível e desbloqueie conquistas. <a href="#ranking">Ver o ranking →</a></p>
+          </div>
+          <div class="podio podio--compacto">
+            ${[podioInicio[1], podioInicio[0], podioInicio[2]].filter(Boolean).map((r) => {
+              const pos = podioInicio.indexOf(r) + 1;
+              return `<div class="podio__lugar podio__lugar--${pos}">
+                <span class="avatar">${esc(iniciais(r.m.nome))}</span><b>${esc(primeiroNome(r.m))}</b>
+                <small>${r.presencas} encontros</small><div class="podio__degrau">${pos}º</div></div>`;
+            }).join("")}
+          </div>
+        </div>
+      </section>` : ""}
+
+      <section class="secao">
+        <div class="container convite-online">
+          <div>
+            <span class="sobrancelha">Novidade · Clube Online</span>
+            <h2>Mora longe? Leia com a gente <em>pela tela</em></h2>
+            <p>Encontros ao vivo pela internet, sala exclusiva com gravações e materiais de leitura. A partir de ${dinheiro(Math.min(...(D().online.planos || [{ preco: 0 }]).map((p) => (p.periodo === "ano" ? p.preco / 12 : p.preco))))} por mês.</p>
+            <a class="botao" href="#online">Conhecer o Clube Online</a>
+          </div>
+          <div class="convite-online__tela" aria-hidden="true">${icone("tela")}<span>ao vivo</span></div>
+        </div>
+      </section>
 
       <section class="secao">
         <div class="container">
@@ -1184,6 +1749,7 @@
 
   function abrirMais() {
     const itens = [
+      ["ranking", "trofeu", "Ranking"], ["online", "tela", "Clube Online"],
       ["encontros", "calendario", "Encontros"], ["membros", "grupo", "Membros"], ["votacao", "voto", "Próxima leitura"],
       ["citacoes", "aspas", "Citações"], ["painel", "grafico", "Painel"], ["criadora", "pessoa", "A criadora"]
     ];
@@ -1191,8 +1757,13 @@
       <h3>Mais do clube</h3>
       <ul class="lista-mais">
         ${itens.map(([rota, ic, nome]) => `<li><a href="#${rota}">${icone(ic)} ${nome}</a></li>`).join("")}
+        <li><a href="#" id="mais-entrar">${icone("pessoa")} ${eu() ? "Sair (" + esc(primeiroNome(eu())) + ")" : "Entrar"}</a></li>
         <li><a href="#" id="mais-curadoria">${icone("chave")} ${emCuradoria() ? "Sair da curadoria" : "Modo curadoria"}</a></li>
       </ul>`);
+    $("#mais-entrar").addEventListener("click", (e) => {
+      e.preventDefault();
+      if (eu()) { fecharModal(); definirEu(null); avisar("Até a próxima leitura!"); renderizar(); } else abrirEntrar();
+    });
     $("#mais-curadoria").addEventListener("click", (e) => { e.preventDefault(); fecharModal(); $("#botao-curadoria").click(); });
   }
 
@@ -1223,7 +1794,9 @@
     votacao: telaVotacao,
     citacoes: telaCitacoes,
     painel: telaPainel,
-    criadora: telaCriadora
+    criadora: telaCriadora,
+    ranking: telaRanking,
+    online: telaOnline
   };
 
   function rotaAtual() {
@@ -1242,6 +1815,11 @@
     const abaAtiva = $(".abas a.ativa");
     if (abaAtiva) abaAtiva.parentElement.scrollLeft = abaAtiva.offsetLeft - 24;
     conteudo.classList.toggle("pagina", r !== "inicio");
+    const perfil = $("#botao-perfil");
+    const e = eu();
+    perfil.classList.toggle("ativo", !!e);
+    perfil.title = e ? `${e.nome} · minha jornada` : "Entrar";
+    perfil.setAttribute("aria-label", perfil.title);
     ROTAS[r]();
     atualizarFaixa();
   }
@@ -1260,6 +1838,7 @@
     if (rotaAtual() === "estante") { telaEstante(); window.scrollTo(0, 0); } else location.hash = "estante";
   });
   $("#botao-mais").addEventListener("click", abrirMais);
+  $("#botao-perfil").addEventListener("click", () => { if (eu()) location.hash = "checkin"; else abrirEntrar(); });
 
   window.addEventListener("hashchange", () => { fecharModal(); renderizar(); window.scrollTo(0, 0); });
   try { if (sessionStorage.getItem(CHAVE_CURADORIA)) aplicarCuradoria(true); } catch (e) {}

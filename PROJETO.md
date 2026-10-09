@@ -1,6 +1,6 @@
 # Diário do projeto — site do clube "Cansei! Vou ler um livro."
 
-Última atualização: 30/09/2026 · versão guardada: **v0.1-teste** (commit `3078bb1`) · visual atual: **v0.2** (aprovado pela Amanda)
+Última atualização: 09/10/2026 · versão guardada: **v0.1-teste** (commit `3078bb1`) · visual atual: **v0.2** (aprovado pela Amanda)
 
 ## Onde estamos
 
@@ -31,6 +31,22 @@ Companhia das Letras (fundo creme, serifa forte, busca em pílula, filtros em p�
 - Foto da criadora: `img/criadora.jpg` (recortada 4:5 para a moldura em arco) ✓
 - Falta: **nome** e **texto de apresentação** da criadora (`criadora` em `js/dados-iniciais.js`)
 
+### Gamificação e ranking (v0.3)
+- Pontos: presença em encontro +50 · livro lido +30 · resenha +15 · citação +10 · indicação +10
+- Níveis: Página 1 (0) · Capítulo aberto (100) · Leitura em dia (250) · Traça de livro (500) · Bibliófilo(a) (900) · Lenda da estante (1500)
+- 13 conquistas (presença, sequência de encontros, leituras, resenhas, citações, indicação, assinatura)
+- "Entrar" pelo e-mail ou nome da ficha (sem senha nesta versão) → boas-vindas com pontos, posição e próximo encontro
+- Aba **Ranking** com pódio, critérios (pontos, encontros, leituras) e período (este ano / desde sempre); pódio também na Início
+- "Minha jornada" (aba Check-in): nível, barra de pontos, posição, sequência e conquistas; comemoração ao subir de nível
+- Curadoria → Painel: botão para carregar/remover **dados de demonstração** (membros e encontros fictícios)
+
+### Clube Online (v0.3)
+- Aba **Clube Online**: benefícios, planos (mensal e anual — **valores de exemplo**), área do assinante (próximo encontro online com link da sala, materiais e gravações), gerenciar/cancelar assinatura
+- Encontros podem ser **presenciais** ou **online**; os online só liberam check-in e sala para assinantes
+- Checkout em 3 etapas (plano → Pix ou cartão → confirmação) em **modo de demonstração**: nada é cobrado e nenhum dado de cartão é pedido
+- `js/pagamento.js` concentra a integração; para cobrar de verdade é preciso: conta no provedor (Mercado Pago ou Stripe), servidor com as chaves e webhook confirmando o pagamento (ver "Para subir ao ambiente online")
+- A definir pela Amanda: valores dos planos, provedor de pagamento, plataforma da sala (Zoom, Meet…)
+
 ### Decisões tomadas
 - Nome oficial: **"Cansei! Vou ler um livro."** (com ponto final, igual ao logo).
 - *Pequena coreografia do adeus* e *Peso do pássaro morto* (Aline Bei, mai/2025) ficam como **dois livros separados**.
@@ -39,7 +55,7 @@ Companhia das Letras (fundo creme, serifa forte, busca em pílula, filtros em p�
 ## Pendências e próximos passos
 
 **Funcionalidades novas planejadas**
-- [ ] **Aba "Clube Online"** — área separada para os membros da modalidade online, com **assinatura mensal e pagamento integrado**
+- [x] **Aba "Clube Online"** — feita em modo demonstração (v0.3); falta ligar o pagamento real
   - Precisa do banco de dados e do login (ver "Para subir ao ambiente online")
   - Pagamento recorrente no Brasil: Mercado Pago, Asaas, Pagar.me ou Stripe (comparar taxas, Pix/cartão/boleto)
   - Caminho sugerido: 1º link de assinatura do próprio provedor (sem servidor); 2º confirmação automática do pagamento (webhook) liberando o acesso do membro
