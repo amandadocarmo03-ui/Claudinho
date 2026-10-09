@@ -88,7 +88,9 @@ Companhia das Letras (fundo creme, serifa forte, busca em pílula, filtros em p�
   - https://clubedolivropriolikarnal.com.br/lista-de-espera/ — **clareza dos dados e estética mais moderna** → mapa em `docs/referencias/prioli-karnal.md`
   - (Os sites não abrem no ambiente do Claude: rede bloqueada. Falta o mapa do Literatura Clássica.)
 
-**Para subir ao ambiente online**
+**Para subir ao ambiente online** — guia completo em `docs/guia-ambiente-online.md`
+- Decisão (09/10/2026): pagamento pelo **Mercado Pago** (Assinaturas)
+- Stack sugerida: Vercel (hospedagem) + Registro.br (domínio) + Supabase (banco de dados e login por link no e-mail) + Brevo (e-mails automáticos e newsletter)
 - [ ] Banco de dados compartilhado (Firebase ou Supabase) — hoje os dados ficam só no navegador de cada pessoa; trocar apenas `js/armazenamento.js`
 - [ ] Login dos membros (hoje cada pessoa escolhe o próprio nome numa lista)
 - [ ] Hospedagem (GitHub Pages, Netlify ou Vercel) e, se quiser, domínio próprio
